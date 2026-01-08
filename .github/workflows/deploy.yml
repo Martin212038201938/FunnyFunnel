@@ -58,5 +58,5 @@ jobs:
             
             # PM2 neu starten oder starten
             pm2 restart funnyfunnel || pm2 start wsgi.py --name funnyfunnel --interpreter venv/bin/python
-            ENDSSH
+ENDSSH
 
