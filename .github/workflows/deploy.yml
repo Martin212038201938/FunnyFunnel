@@ -1,76 +1,62 @@
-name: Deploy to AlwaysData
+name: Deploy FunnyFunnel to AlwaysData
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
-      - claude/sales-lead-generation-app-pR6Is
-    paths:
-      - 'app/**'
-      - 'static/**'
-      - 'requirements.txt'
-      - 'run.py'
-      - 'wsgi.py'
-      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy and restart app
-        uses: appleboy/ssh-action@v1.0.0
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script: |
-            cd ~
-
-            # Remove existing directory if it's not a git repo
-            if [ -d ~/funnyfunnel ] && [ ! -d ~/funnyfunnel/.git ]; then
-              echo "Removing invalid funnyfunnel directory..."
-              rm -rf ~/funnyfunnel
-            fi
-
-            # Clone or update repository
-            if [ -d ~/funnyfunnel/.git ]; then
-              echo "Updating existing repository..."
-              cd ~/funnyfunnel
-              git fetch origin
-              git reset --hard origin/${{ github.ref_name }}
-              git clean -fd
-            else
-              echo "Cloning repository..."
-              git clone https://github.com/${{ github.repository }}.git funnyfunnel
-              cd ~/funnyfunnel
-              git checkout ${{ github.ref_name }}
-            fi
-
-            # Create virtual environment if not exists
+          python-version: '3.11'
+      
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+      
+      - name: Deploy via rsync over SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST}}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME}}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD}}
+        run: |
+          sshpass -p "$SSH_PASSWORD" rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=no -p 22" \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='instance/' \
+            ./ \
+            ${SSH_USERNAME}@${SSH_HOST}:/home/y-b/funnyfunnel/
+      
+      - name: Install dependencies and restart app
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST}}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME}}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD}}
+        run: |
+          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no \
+            ${SSH_USERNAME}@${SSH_HOST} << 'ENDSSH'
+            cd /home/y-b/funnyfunnel
+            
+            # Virtuelle Umgebung erstellen falls nicht vorhanden
             if [ ! -d "venv" ]; then
-              echo "Creating virtual environment..."
               python3 -m venv venv
             fi
-
-            # Activate venv and install dependencies
+            
+            # Aktivieren und Dependencies installieren
             source venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
+            
+            # PM2 neu starten oder starten
+            pm2 restart funnyfunnel || pm2 start wsgi.py --name funnyfunnel --interpreter venv/bin/python
+ENDSSH
 
-            # Ensure instance directory exists for SQLite
-            mkdir -p instance
-
-            # Restart application with pm2
-            if pm2 list | grep -q "funnyfunnel"; then
-              echo "Restarting funnyfunnel..."
-              pm2 restart funnyfunnel
-            else
-              echo "Starting funnyfunnel..."
-              pm2 start "venv/bin/gunicorn -w 2 -b 127.0.0.1:8000 wsgi:application" --name funnyfunnel
-            fi
-
-            echo "Deployment complete!"
