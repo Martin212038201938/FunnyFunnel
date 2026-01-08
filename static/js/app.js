@@ -1,4 +1,4 @@
-// FunnyFunnel - Lead Generator App
+// FunnyFunnel - Lead Generator App (2025 Edition)
 
 const API_BASE = '/api';
 let leads = [];
@@ -31,13 +31,17 @@ function setupEventListeners() {
         if (e.key === 'Enter') loadLeads();
     });
 
-    // Close modal on outside click
+    // Close modal on outside click or Escape
     document.getElementById('letterModal').addEventListener('click', (e) => {
         if (e.target.id === 'letterModal') closeModal();
     });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
 }
 
-// API Calls
+// API Calls with loading state
 async function apiCall(endpoint, method = 'GET', data = null) {
     const options = {
         method,
@@ -57,7 +61,6 @@ async function apiCall(endpoint, method = 'GET', data = null) {
         throw new Error(error.error || 'API Error');
     }
 
-    // Handle CSV export
     if (response.headers.get('Content-Type')?.includes('text/csv')) {
         return response;
     }
@@ -72,9 +75,8 @@ async function loadLeads() {
 
     try {
         loadingEl.style.display = 'block';
-        leadListEl.innerHTML = '';
+        leadListEl.innerHTML = '<div class="loading" id="loading">Leads werden geladen...</div>';
 
-        // Build query params
         const statusFilter = document.getElementById('statusFilter').value;
         const keywordFilter = document.getElementById('keywordFilter').value;
 
@@ -85,11 +87,15 @@ async function loadLeads() {
         const queryString = queryParams.toString();
         leads = await apiCall(`/leads${queryString ? '?' + queryString : ''}`);
 
-        loadingEl.style.display = 'none';
         renderLeads();
         updateStats();
     } catch (error) {
-        loadingEl.textContent = 'Fehler beim Laden der Leads';
+        leadListEl.innerHTML = `
+            <div class="empty-state">
+                <h3>Fehler beim Laden</h3>
+                <p>${escapeHtml(error.message)}</p>
+            </div>
+        `;
         console.error(error);
         showToast('Fehler beim Laden der Leads', 'error');
     }
@@ -103,26 +109,26 @@ function renderLeads() {
         leadListEl.innerHTML = `
             <div class="empty-state">
                 <h3>Keine Leads gefunden</h3>
-                <p>Klicken Sie auf "Demo-Daten laden" um Beispieldaten zu erstellen.</p>
+                <p>Klicken Sie auf "Demo-Daten" um Beispieldaten zu erstellen.</p>
             </div>
         `;
         return;
     }
 
-    leadListEl.innerHTML = leads.map(lead => createLeadCard(lead)).join('');
+    leadListEl.innerHTML = leads.map((lead, index) => createLeadCard(lead, index)).join('');
 }
 
 // Create HTML for a single lead card
-function createLeadCard(lead) {
+function createLeadCard(lead, index) {
     const keywords = (lead.keywords || []).slice(0, 4);
-    const keywordTags = keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('');
+    const keywordTags = keywords.map(k => `<span class="keyword-tag">${escapeHtml(k)}</span>`).join('');
 
     const isActivated = lead.status !== 'neu';
     const canResearch = lead.status === 'aktiviert';
     const canGenerateLetter = ['recherchiert', 'anschreiben_erstellt', 'angeschrieben', 'antwort_erhalten'].includes(lead.status);
 
     return `
-        <div class="lead-card" id="lead-${lead.id}">
+        <div class="lead-card" id="lead-${lead.id}" style="animation-delay: ${Math.min(index * 0.05, 0.3)}s">
             <div class="lead-header" onclick="toggleLead(${lead.id})">
                 <input type="checkbox" class="lead-checkbox"
                     ${isActivated ? 'checked disabled' : ''}
@@ -144,9 +150,8 @@ function createLeadCard(lead) {
 // Render lead details section
 function renderLeadDetails(lead, canResearch, canGenerateLetter) {
     return `
-        <!-- Preview/Full Text -->
         <div class="detail-section">
-            <h4>📄 Jobanzeige</h4>
+            <h4><span>📄</span> Jobanzeige</h4>
             ${lead.volltext ? `
                 <div class="fulltext-box">${escapeHtml(lead.volltext)}</div>
             ` : `
@@ -156,7 +161,7 @@ function renderLeadDetails(lead, canResearch, canGenerateLetter) {
                 </div>
             `}
             ${lead.quelle_url ? `
-                <p style="margin-top: 10px;">
+                <p style="margin-top: 12px;">
                     <a href="${escapeHtml(lead.quelle_url)}" target="_blank" rel="noopener">
                         Zur Originalanzeige auf ${escapeHtml(lead.quelle)} →
                     </a>
@@ -164,9 +169,8 @@ function renderLeadDetails(lead, canResearch, canGenerateLetter) {
             ` : ''}
         </div>
 
-        <!-- Company Data -->
         <div class="detail-section">
-            <h4>🏢 Firmendaten</h4>
+            <h4><span>🏢</span> Firmendaten</h4>
             <div class="detail-grid">
                 <div class="detail-item">
                     <span class="detail-label">Firmenname</span>
@@ -195,9 +199,8 @@ function renderLeadDetails(lead, canResearch, canGenerateLetter) {
             </div>
         </div>
 
-        <!-- Contact Person -->
         <div class="detail-section">
-            <h4>👤 Ansprechpartner</h4>
+            <h4><span>👤</span> Ansprechpartner</h4>
             <div class="detail-grid">
                 <div class="detail-item">
                     <span class="detail-label">Name</span>
@@ -222,33 +225,31 @@ function renderLeadDetails(lead, canResearch, canGenerateLetter) {
             </div>
         </div>
 
-        <!-- Cover Letter -->
         ${lead.anschreiben ? `
             <div class="detail-section">
-                <h4>✉️ Anschreiben</h4>
+                <h4><span>✉️</span> Anschreiben</h4>
                 <div class="letter-box">${escapeHtml(lead.anschreiben)}</div>
             </div>
         ` : ''}
 
-        <!-- Actions -->
         <div class="lead-actions">
             ${canResearch ? `
-                <button class="btn btn-primary" onclick="researchLead(${lead.id})">
-                    🔍 Recherchieren
+                <button class="btn btn-primary" onclick="event.stopPropagation(); researchLead(${lead.id}, this)">
+                    <span>🔍</span> Recherchieren
                 </button>
             ` : ''}
             ${canGenerateLetter ? `
-                <button class="btn btn-success" onclick="openLetterModal(${lead.id})">
-                    ✉️ Anschreiben ${lead.anschreiben ? 'bearbeiten' : 'erstellen'}
+                <button class="btn btn-success" onclick="event.stopPropagation(); openLetterModal(${lead.id})">
+                    <span>✉️</span> ${lead.anschreiben ? 'Anschreiben bearbeiten' : 'Anschreiben erstellen'}
                 </button>
             ` : ''}
-            <select class="status-select" onchange="updateStatus(${lead.id}, this.value)">
+            <select class="status-select" onchange="updateStatus(${lead.id}, this.value)" onclick="event.stopPropagation()">
                 ${Object.entries(STATUS_LABELS).map(([value, label]) =>
                     `<option value="${value}" ${lead.status === value ? 'selected' : ''}>${label}</option>`
                 ).join('')}
             </select>
-            <button class="btn btn-outline btn-small" onclick="deleteLead(${lead.id})">
-                🗑️ Löschen
+            <button class="btn btn-outline btn-small" onclick="event.stopPropagation(); deleteLead(${lead.id})">
+                <span>🗑️</span> Löschen
             </button>
         </div>
     `;
@@ -257,6 +258,15 @@ function renderLeadDetails(lead, canResearch, canGenerateLetter) {
 // Toggle lead card expansion
 function toggleLead(leadId) {
     const card = document.getElementById(`lead-${leadId}`);
+    const wasExpanded = card.classList.contains('expanded');
+
+    // Close all other cards
+    document.querySelectorAll('.lead-card.expanded').forEach(c => {
+        if (c.id !== `lead-${leadId}`) {
+            c.classList.remove('expanded');
+        }
+    });
+
     card.classList.toggle('expanded');
 }
 
@@ -264,7 +274,7 @@ function toggleLead(leadId) {
 async function activateLead(leadId) {
     try {
         await apiCall(`/leads/${leadId}/activate`, 'POST');
-        showToast('Lead aktiviert - bereit zur Recherche');
+        showToast('Lead aktiviert', 'success');
         loadLeads();
     } catch (error) {
         showToast(error.message, 'error');
@@ -272,10 +282,10 @@ async function activateLead(leadId) {
 }
 
 // Research a lead
-async function researchLead(leadId) {
-    const btn = event.target;
+async function researchLead(leadId, btn) {
+    const originalContent = btn.innerHTML;
     btn.disabled = true;
-    btn.textContent = '⏳ Recherchiere...';
+    btn.innerHTML = '<span>⏳</span> Recherchiere...';
 
     try {
         await apiCall(`/leads/${leadId}/research`, 'POST');
@@ -283,7 +293,7 @@ async function researchLead(leadId) {
         loadLeads();
     } catch (error) {
         showToast(error.message, 'error');
-    } finally {
+        btn.innerHTML = originalContent;
         btn.disabled = false;
     }
 }
@@ -293,9 +303,9 @@ async function openLetterModal(leadId) {
     currentLeadId = leadId;
     const lead = leads.find(l => l.id === leadId);
 
-    // If no letter exists yet, generate one first
     if (!lead.anschreiben) {
         try {
+            showToast('Generiere Anschreiben...', 'info');
             const updatedLead = await apiCall(`/leads/${leadId}/generate-letter`, 'POST');
             lead.anschreiben = updatedLead.anschreiben;
         } catch (error) {
@@ -306,6 +316,7 @@ async function openLetterModal(leadId) {
 
     document.getElementById('letterText').value = lead.anschreiben || '';
     document.getElementById('letterModal').classList.add('active');
+    document.getElementById('letterText').focus();
 }
 
 // Close modal
@@ -321,7 +332,6 @@ async function copyLetter() {
         await navigator.clipboard.writeText(letterText);
         showToast('In Zwischenablage kopiert', 'success');
     } catch (error) {
-        // Fallback for older browsers
         const textarea = document.getElementById('letterText');
         textarea.select();
         document.execCommand('copy');
@@ -352,7 +362,7 @@ async function saveLetter() {
 async function updateStatus(leadId, newStatus) {
     try {
         await apiCall(`/leads/${leadId}/status`, 'PUT', { status: newStatus });
-        showToast('Status aktualisiert');
+        showToast('Status aktualisiert', 'success');
         loadLeads();
     } catch (error) {
         showToast(error.message, 'error');
@@ -365,7 +375,7 @@ async function deleteLead(leadId) {
 
     try {
         await apiCall(`/leads/${leadId}`, 'DELETE');
-        showToast('Lead gelöscht');
+        showToast('Lead gelöscht', 'success');
         loadLeads();
     } catch (error) {
         showToast(error.message, 'error');
@@ -378,7 +388,6 @@ async function exportCSV() {
         const response = await fetch(`${API_BASE}/leads/export`);
         const blob = await response.blob();
 
-        // Get filename from header or generate one
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = 'leads_export.csv';
         if (contentDisposition) {
@@ -386,7 +395,6 @@ async function exportCSV() {
             if (match) filename = match[1];
         }
 
-        // Download file
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -404,28 +412,68 @@ async function exportCSV() {
 
 // Load demo data
 async function loadDemoData() {
+    const btn = document.getElementById('loadDemoData');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Lade...';
+
     try {
         await apiCall('/seed-demo', 'POST');
         showToast('Demo-Daten geladen', 'success');
         loadLeads();
     } catch (error) {
         showToast(error.message, 'error');
+    } finally {
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
     }
 }
 
-// Update statistics
-function updateStats() {
-    const total = leads.length;
-    const neu = leads.filter(l => l.status === 'neu').length;
-    const aktiviert = leads.filter(l => l.status === 'aktiviert').length;
-    const recherchiert = leads.filter(l => l.status === 'recherchiert').length;
-    const anschreiben = leads.filter(l => ['anschreiben_erstellt', 'angeschrieben', 'antwort_erhalten'].includes(l.status)).length;
+// Animate number counting
+function animateValue(element, start, end, duration) {
+    const range = end - start;
+    const startTime = performance.now();
 
-    document.getElementById('statTotal').textContent = total;
-    document.getElementById('statNeu').textContent = neu;
-    document.getElementById('statAktiviert').textContent = aktiviert;
-    document.getElementById('statRecherchiert').textContent = recherchiert;
-    document.getElementById('statAnschreiben').textContent = anschreiben;
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const current = Math.round(start + range * easeOut);
+        element.textContent = current;
+
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        }
+    }
+
+    requestAnimationFrame(update);
+}
+
+// Update statistics with animation
+function updateStats() {
+    const stats = {
+        total: leads.length,
+        neu: leads.filter(l => l.status === 'neu').length,
+        aktiviert: leads.filter(l => l.status === 'aktiviert').length,
+        recherchiert: leads.filter(l => l.status === 'recherchiert').length,
+        anschreiben: leads.filter(l => ['anschreiben_erstellt', 'angeschrieben', 'antwort_erhalten'].includes(l.status)).length
+    };
+
+    const elements = {
+        total: document.getElementById('statTotal'),
+        neu: document.getElementById('statNeu'),
+        aktiviert: document.getElementById('statAktiviert'),
+        recherchiert: document.getElementById('statRecherchiert'),
+        anschreiben: document.getElementById('statAnschreiben')
+    };
+
+    Object.entries(stats).forEach(([key, value]) => {
+        const el = elements[key];
+        const current = parseInt(el.textContent) || 0;
+        if (current !== value) {
+            animateValue(el, current, value, 500);
+        }
+    });
 }
 
 // Show toast notification

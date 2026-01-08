@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FunnyFunnel - Lead Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎯</text></svg>">
 </head>
 <body>
     <div class="container">
@@ -26,12 +30,18 @@
                     <option value="angeschrieben">Angeschrieben</option>
                     <option value="antwort_erhalten">Antwort erhalten</option>
                 </select>
-                <input type="text" id="keywordFilter" class="filter-input" placeholder="Keyword filtern...">
-                <button id="applyFilters" class="btn btn-secondary">Filtern</button>
+                <input type="text" id="keywordFilter" class="filter-input" placeholder="Nach Keyword filtern...">
+                <button id="applyFilters" class="btn btn-secondary">
+                    <span>🔍</span> Filtern
+                </button>
             </div>
             <div class="actions">
-                <button id="loadDemoData" class="btn btn-outline">Demo-Daten laden</button>
-                <button id="exportCSV" class="btn btn-primary">CSV Export</button>
+                <button id="loadDemoData" class="btn btn-outline">
+                    <span>📦</span> Demo-Daten
+                </button>
+                <button id="exportCSV" class="btn btn-primary">
+                    <span>📊</span> CSV Export
+                </button>
             </div>
         </div>
 
@@ -70,26 +80,30 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Anschreiben bearbeiten</h2>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <button class="modal-close" onclick="closeModal()">×</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Ihr Name:</label>
+                    <label>Ihr Name</label>
                     <input type="text" id="absenderName" class="form-input" placeholder="Max Mustermann">
                 </div>
                 <div class="form-group">
-                    <label>Ihre Firma:</label>
+                    <label>Ihre Firma</label>
                     <input type="text" id="absenderFirma" class="form-input" placeholder="Ihre Firma GmbH">
                 </div>
                 <div class="form-group">
-                    <label>Anschreiben:</label>
-                    <textarea id="letterText" class="form-textarea" rows="15"></textarea>
+                    <label>Anschreiben</label>
+                    <textarea id="letterText" class="form-textarea" rows="12"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
-                <button class="btn btn-outline" onclick="copyLetter()">Kopieren</button>
-                <button class="btn btn-primary" onclick="saveLetter()">Speichern</button>
+                <button class="btn btn-outline" onclick="closeModal()">Abbrechen</button>
+                <button class="btn btn-secondary" onclick="copyLetter()">
+                    <span>📋</span> Kopieren
+                </button>
+                <button class="btn btn-primary" onclick="saveLetter()">
+                    <span>💾</span> Speichern
+                </button>
             </div>
         </div>
     </div>
