@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FunnyFunnel - Lead Generator</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>FunnyFunnel</h1>
+            <p class="subtitle">Sales Lead Generator für KI-Jobanzeigen</p>
+        </header>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="filters">
+                <select id="statusFilter" class="filter-select">
+                    <option value="">Alle Status</option>
+                    <option value="neu">Neu</option>
+                    <option value="aktiviert">Aktiviert</option>
+                    <option value="recherchiert">Recherchiert</option>
+                    <option value="anschreiben_erstellt">Anschreiben erstellt</option>
+                    <option value="angeschrieben">Angeschrieben</option>
+                    <option value="antwort_erhalten">Antwort erhalten</option>
+                </select>
+                <input type="text" id="keywordFilter" class="filter-input" placeholder="Keyword filtern...">
+                <button id="applyFilters" class="btn btn-secondary">Filtern</button>
+            </div>
+            <div class="actions">
+                <button id="loadDemoData" class="btn btn-outline">Demo-Daten laden</button>
+                <button id="exportCSV" class="btn btn-primary">CSV Export</button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats" id="stats">
+            <div class="stat-item">
+                <span class="stat-value" id="statTotal">0</span>
+                <span class="stat-label">Gesamt</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="statNeu">0</span>
+                <span class="stat-label">Neu</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="statAktiviert">0</span>
+                <span class="stat-label">Aktiviert</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="statRecherchiert">0</span>
+                <span class="stat-label">Recherchiert</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="statAnschreiben">0</span>
+                <span class="stat-label">Anschreiben</span>
+            </div>
+        </div>
+
+        <!-- Lead List -->
+        <div class="lead-list" id="leadList">
+            <div class="loading" id="loading">Leads werden geladen...</div>
+        </div>
+    </div>
+
+    <!-- Modal for Cover Letter -->
+    <div id="letterModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Anschreiben bearbeiten</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Ihr Name:</label>
+                    <input type="text" id="absenderName" class="form-input" placeholder="Max Mustermann">
+                </div>
+                <div class="form-group">
+                    <label>Ihre Firma:</label>
+                    <input type="text" id="absenderFirma" class="form-input" placeholder="Ihre Firma GmbH">
+                </div>
+                <div class="form-group">
+                    <label>Anschreiben:</label>
+                    <textarea id="letterText" class="form-textarea" rows="15"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+                <button class="btn btn-outline" onclick="copyLetter()">Kopieren</button>
+                <button class="btn btn-primary" onclick="saveLetter()">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
