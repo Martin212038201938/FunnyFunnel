@@ -45,7 +45,8 @@ jobs:
               git clean -fd
             else
               echo "Cloning repository..."
-              git clone https://github.com/Martin212038201938/FunnyFunnel.git funnyfunnel              cd ~/funnyfunnel
+              git clone https://github.com/${{ github.repository }}.git funnyfunnel
+              cd ~/funnyfunnel
               git checkout ${{ github.ref_name }}
             fi
 
@@ -64,8 +65,12 @@ jobs:
             mkdir -p instance
 
             # Restart application with pm2
-            pm2 delete funnyfunnel 2>/dev/null || true
-            pm2 start "venv/bin/gunicorn -w 2 -b 127.0.0.1:8000 wsgi:application" --name funnyfunnel
-pm2 start "venv/bin/gunicorn -w 2 -b 127.0.0.1:8000 wsgi:application" --name funnyfunnel            fi
+            if pm2 list | grep -q "funnyfunnel"; then
+              echo "Restarting funnyfunnel..."
+              pm2 restart funnyfunnel
+            else
+              echo "Starting funnyfunnel..."
+              pm2 start "venv/bin/gunicorn -w 2 -b 127.0.0.1:8000 wsgi:application" --name funnyfunnel
+            fi
 
             echo "Deployment complete!"
