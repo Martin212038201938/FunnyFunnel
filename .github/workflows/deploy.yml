@@ -22,9 +22,9 @@ jobs:
       
       - name: Deploy via rsync over SSH
         env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST}}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME}}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD}}
         run: |
           sshpass -p "$SSH_PASSWORD" rsync -avz --delete \
             -e "ssh -o StrictHostKeyChecking=no -p 22" \
@@ -38,9 +38,9 @@ jobs:
       
       - name: Install dependencies and restart app
         env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST}}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME}}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD}}
         run: |
           sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no \
             ${SSH_USERNAME}@${SSH_HOST} << 'ENDSSH'
