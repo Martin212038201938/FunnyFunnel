@@ -12,6 +12,7 @@ env/
 # Database
 *.db
 *.sqlite
+instance/
 
 # Environment
 .env
