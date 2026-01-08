@@ -45,8 +45,7 @@ jobs:
               git clean -fd
             else
               echo "Cloning repository..."
-              GIT_TERMINAL_PROMPT=0 git clone https://github.com/${{ github.repository }}.git funnyfunnel
-              cd ~/funnyfunnel
+              git clone https://github.com/Martin212038201938/FunnyFunnel.git funnyfunnel              cd ~/funnyfunnel
               git checkout ${{ github.ref_name }}
             fi
 
