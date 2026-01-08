@@ -21,24 +21,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy via rsync
-        uses: burnett01/rsync-deployments@5.2
-        with:
-          switches: -avzr --delete --exclude='.git' --exclude='instance/' --exclude='__pycache__/' --exclude='.env' --exclude='venv/'
-          path: ./
-          remote_path: ~/funnyfunnel/
-          remote_host: ssh-${{ secrets.ALWAYSDATA_SITE }}.alwaysdata.net
-          remote_user: ${{ secrets.SSH_USERNAME }}
-          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Install dependencies and restart app
+      - name: Deploy and restart app
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ssh-${{ secrets.ALWAYSDATA_SITE }}.alwaysdata.net
+          host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
           script: |
-            cd ~/funnyfunnel
+            cd ~
+
+            # Remove existing directory if it's not a git repo
+            if [ -d ~/funnyfunnel ] && [ ! -d ~/funnyfunnel/.git ]; then
+              echo "Removing invalid funnyfunnel directory..."
+              rm -rf ~/funnyfunnel
+            fi
+
+            # Clone or update repository
+            if [ -d ~/funnyfunnel/.git ]; then
+              echo "Updating existing repository..."
+              cd ~/funnyfunnel
+              git fetch origin
+              git reset --hard origin/${{ github.ref_name }}
+              git clean -fd
+            else
+              echo "Cloning repository..."
+              git clone https://github.com/${{ github.repository }}.git funnyfunnel
+              cd ~/funnyfunnel
+              git checkout ${{ github.ref_name }}
+            fi
 
             # Create virtual environment if not exists
             if [ ! -d "venv" ]; then
