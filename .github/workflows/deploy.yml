@@ -1,0 +1,62 @@
+name: Deploy FunnyFunnel to AlwaysData
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+      
+      - name: Deploy via rsync over SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sshpass -p "$SSH_PASSWORD" rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=no -p 22" \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='instance/' \
+            ./ \
+            ${SSH_USERNAME}@${SSH_HOST}:/home/y-b/funnyfunnel/
+      
+      - name: Install dependencies and restart app
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no \
+            ${SSH_USERNAME}@${SSH_HOST} << 'ENDSSH'
+            cd /home/y-b/funnyfunnel
+            
+            # Virtuelle Umgebung erstellen falls nicht vorhanden
+            if [ ! -d "venv" ]; then
+              python3 -m venv venv
+            fi
+            
+            # Aktivieren und Dependencies installieren
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+            
+            # PM2 neu starten oder starten
+            pm2 restart funnyfunnel || pm2 start wsgi.py --name funnyfunnel --interpreter venv/bin/python
+            pm2 save
+          ENDSSH
