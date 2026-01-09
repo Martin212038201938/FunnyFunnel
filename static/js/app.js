@@ -109,7 +109,7 @@ function renderLeads() {
         leadListEl.innerHTML = `
             <div class="empty-state">
                 <h3>Keine Leads gefunden</h3>
-                <p>Klicken Sie auf "Demo-Daten" um Beispieldaten zu erstellen.</p>
+                <p>Klicken Sie auf "StepStone Import" um Stellenanzeigen zu importieren.</p>
             </div>
         `;
         return;
@@ -726,6 +726,11 @@ function updateBulkActionsUI() {
     const selectedCountEl = document.getElementById('selectedCount');
     const selectAllCheckbox = document.getElementById('selectAllLeads');
 
+    // Guard against missing elements
+    if (!bulkActionsEl || !selectedCountEl || !selectAllCheckbox) {
+        return;
+    }
+
     if (selectedLeads.size > 0) {
         bulkActionsEl.style.display = 'flex';
         selectedCountEl.textContent = selectedLeads.size;
@@ -746,3 +751,12 @@ window.toggleLeadSelection = toggleLeadSelection;
 window.toggleSelectAll = toggleSelectAll;
 window.clearSelection = clearSelection;
 window.deleteSelectedLeads = deleteSelectedLeads;
+window.toggleLead = toggleLead;
+window.activateLead = activateLead;
+window.researchLead = researchLead;
+window.openLetterModal = openLetterModal;
+window.closeModal = closeModal;
+window.copyLetter = copyLetter;
+window.saveLetter = saveLetter;
+window.updateStatus = updateStatus;
+window.deleteLead = deleteLead;

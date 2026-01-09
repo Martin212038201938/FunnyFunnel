@@ -20,7 +20,7 @@ class Lead(db.Model):
     quelle = db.Column(db.String(200), default='StepStone')
     quelle_url = db.Column(db.String(1000))
     keywords = db.Column(db.String(500))  # Comma-separated
-    textvorschau = db.Column(db.String(500))
+    textvorschau = db.Column(db.Text)  # Full job description text
     volltext = db.Column(db.Text)
 
     # Company data
