@@ -155,6 +155,9 @@ function renderLeadDetails(lead, canResearch, canGenerateLetter) {
     // Use volltext if available, otherwise use textvorschau
     const jobText = lead.volltext || lead.textvorschau || 'Keine Beschreibung verfügbar';
 
+    // Check if company data is missing
+    const missingCompanyData = !lead.firmen_website || !lead.firmen_email || !lead.firmen_adresse;
+
     return `
         <div class="detail-section">
             <h4><span>📄</span> Jobanzeige</h4>
@@ -196,6 +199,13 @@ function renderLeadDetails(lead, canResearch, canGenerateLetter) {
                     </span>
                 </div>
             </div>
+            ${missingCompanyData ? `
+                <div style="margin-top: 16px;">
+                    <button class="btn btn-secondary" onclick="event.stopPropagation(); researchLead(${lead.id}, this)">
+                        <span>🔍</span> Firmendaten recherchieren
+                    </button>
+                </div>
+            ` : ''}
         </div>
 
         <div class="detail-section">
@@ -759,3 +769,38 @@ window.copyLetter = copyLetter;
 window.saveLetter = saveLetter;
 window.updateStatus = updateStatus;
 window.deleteLead = deleteLead;
+window.filterByStatus = filterByStatus;
+
+// Filter leads by status via stat buttons
+function filterByStatus(status) {
+    // Update the status filter dropdown
+    document.getElementById('statusFilter').value = status;
+
+    // Clear keyword filter
+    document.getElementById('keywordFilter').value = '';
+
+    // Update active state on stat items
+    document.querySelectorAll('.stat-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Find and highlight the clicked stat item
+    const statusMap = {
+        '': 'statTotal',
+        'neu': 'statNeu',
+        'aktiviert': 'statAktiviert',
+        'recherchiert': 'statRecherchiert',
+        'anschreiben_erstellt': 'statAnschreiben'
+    };
+
+    const activeStatId = statusMap[status];
+    if (activeStatId) {
+        const activeEl = document.getElementById(activeStatId);
+        if (activeEl && activeEl.parentElement) {
+            activeEl.parentElement.classList.add('active');
+        }
+    }
+
+    // Reload leads with new filter
+    loadLeads();
+}

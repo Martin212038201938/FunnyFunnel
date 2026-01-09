@@ -335,6 +335,25 @@ body::before {
     overflow: hidden;
 }
 
+.stat-item.clickable {
+    cursor: pointer;
+}
+
+.stat-item.clickable:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-primary);
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+}
+
+.stat-item.clickable:active {
+    transform: translateY(-2px);
+}
+
+.stat-item.active {
+    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+}
+
 .stat-item::before {
     content: '';
     position: absolute;
