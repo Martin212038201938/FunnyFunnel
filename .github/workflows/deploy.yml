@@ -30,63 +30,21 @@ jobs:
           script: |
             cd ~
             
-            # Create directory if it doesn't exist
+            # Download and extract code from GitHub
+            echo "Downloading code from GitHub..."
+            curl -L -o main.tar.gz https://github.com/Martin212038201938/FunnyFunnel/archive/refs/heads/main.tar.gz
+            
+            # Extract to temporary directory
+            rm -rf FunnyFunnel-main
+            tar -xzf main.tar.gz
+            rm main.tar.gz
+            
+            # Sync to funnyfunnel directory (keeping venv)
             mkdir -p funnyfunnel
+            rsync -av --exclude='venv' --exclude='instance' --delete FunnyFunnel-main/ funnyfunnel/
+            rm -rf FunnyFunnel-main
+            
             cd funnyfunnel
-            
-            # Create basic Flask app structure if files don't exist
-            if [ ! -f "run.py" ]; then
-              echo "Creating minimal Flask app..."
-              mkdir -p app instance
-              
-              cat > run.py << 'RUNPY'
-            from app import create_app
-            
-            application = create_app()
-            
-            if __name__ == '__main__':
-                application.run(debug=False)
-            RUNPY
-              
-              cat > wsgi.py << 'WSGIPY'
-            from run import application
-            
-            if __name__ == "__main__":
-                application.run()
-            WSGIPY
-              
-              cat > requirements.txt << 'REQ'
-            Flask==3.0.0
-            Werkzeug==3.0.1
-            gunicorn==21.2.0
-            REQ
-              
-              mkdir -p app
-              cat > app/__init__.py << 'APPINIT'
-            from flask import Flask
-            import os
-            
-            def create_app():
-                app = Flask(__name__, instance_relative_config=True)
-                
-                # Ensure instance folder exists
-                os.makedirs(app.instance_path, exist_ok=True)
-                
-                @app.route('/')
-                def index():
-                    return '''<!DOCTYPE html>
-            <html>
-            <head><title>FunnyFunnel - Lead Generator</title></head>
-            <body>
-                <h1>FunnyFunnel</h1>
-                <p>Lead generation web app is running!</p>
-                <p>Status: OK</p>
-            </body>
-            </html>'''
-                
-                return app
-            APPINIT
-            fi
             
             # Create virtual environment if not exists
             if [ ! -d "venv" ]; then
