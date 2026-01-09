@@ -70,12 +70,10 @@ async function apiCall(endpoint, method = 'GET', data = null) {
 
 // Load leads from API
 async function loadLeads() {
-    const loadingEl = document.getElementById('loading');
     const leadListEl = document.getElementById('leadList');
 
     try {
-        loadingEl.style.display = 'block';
-        leadListEl.innerHTML = '<div class="loading" id="loading">Leads werden geladen...</div>';
+        leadListEl.innerHTML = '<div class="loading">Leads werden geladen...</div>';
 
         const statusFilter = document.getElementById('statusFilter').value;
         const keywordFilter = document.getElementById('keywordFilter').value;
