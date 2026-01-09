@@ -494,3 +494,190 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// ==================== StepStone Import Functions ====================
+
+let searchResults = [];
+let selectedJobs = new Set();
+
+// Setup import modal event listeners
+function setupImportEventListeners() {
+    document.getElementById('openImportModal')?.addEventListener('click', openImportModal);
+    document.getElementById('searchStepStone')?.addEventListener('click', searchStepStone);
+    document.getElementById('selectAllResults')?.addEventListener('click', selectAllResults);
+    document.getElementById('deselectAllResults')?.addEventListener('click', deselectAllResults);
+    document.getElementById('importSelected')?.addEventListener('click', importSelectedJobs);
+
+    // Close import modal on outside click
+    document.getElementById('importModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'importModal') closeImportModal();
+    });
+}
+
+// Call this in DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    setupImportEventListeners();
+});
+
+// Open import modal
+function openImportModal() {
+    document.getElementById('importModal').classList.add('active');
+    // Reset state
+    searchResults = [];
+    selectedJobs.clear();
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('searchLoading').style.display = 'none';
+    updateImportButton();
+}
+
+// Close import modal
+function closeImportModal() {
+    document.getElementById('importModal').classList.remove('active');
+}
+
+// Search StepStone
+async function searchStepStone() {
+    const btn = document.getElementById('searchStepStone');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Suche läuft...';
+
+    // Show loading, hide results
+    document.getElementById('searchLoading').style.display = 'block';
+    document.getElementById('searchResults').style.display = 'none';
+
+    // Get search parameters
+    const searchParams = {
+        keywords: document.getElementById('searchKeywords').value || 'KI AI GenAI Copilot',
+        location: document.getElementById('searchLocation').value || null,
+        radius: parseInt(document.getElementById('searchRadius').value) || 30,
+        date_filter: document.getElementById('searchDateFilter').value || null,
+        job_title_filter: document.getElementById('searchJobTitle').value || null,
+        max_pages: parseInt(document.getElementById('searchMaxPages').value) || 2
+    };
+
+    try {
+        const response = await apiCall('/stepstone/search', 'POST', searchParams);
+
+        document.getElementById('searchLoading').style.display = 'none';
+
+        if (response.success && response.jobs.length > 0) {
+            searchResults = response.jobs;
+            selectedJobs.clear();
+            renderSearchResults();
+            document.getElementById('searchResults').style.display = 'block';
+            showToast(`${response.count} Jobs gefunden`, 'success');
+        } else {
+            document.getElementById('searchResults').style.display = 'block';
+            document.getElementById('resultsList').innerHTML = `
+                <div class="empty-results">
+                    <h4>Keine Ergebnisse</h4>
+                    <p>Versuchen Sie andere Suchbegriffe oder erweitern Sie den Suchbereich.</p>
+                </div>
+            `;
+            document.getElementById('resultsCount').textContent = '0 Ergebnisse gefunden';
+            searchResults = [];
+        }
+    } catch (error) {
+        document.getElementById('searchLoading').style.display = 'none';
+        showToast('Fehler bei der Suche: ' + error.message, 'error');
+        console.error(error);
+    } finally {
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+    }
+}
+
+// Render search results
+function renderSearchResults() {
+    const listEl = document.getElementById('resultsList');
+    document.getElementById('resultsCount').textContent = `${searchResults.length} Ergebnisse gefunden`;
+
+    listEl.innerHTML = searchResults.map((job, index) => {
+        const keywords = (job.keywords || []).slice(0, 3);
+        const keywordTags = keywords.map(k => `<span class="keyword-tag">${escapeHtml(k)}</span>`).join('');
+
+        return `
+            <div class="result-item ${selectedJobs.has(index) ? 'selected' : ''}"
+                 onclick="toggleJobSelection(${index})">
+                <input type="checkbox" class="result-checkbox"
+                       ${selectedJobs.has(index) ? 'checked' : ''}
+                       onclick="event.stopPropagation(); toggleJobSelection(${index})">
+                <div class="result-content">
+                    <div class="result-title">${escapeHtml(job.titel)}</div>
+                    <div class="result-meta">
+                        ${job.firmenname ? `<span class="result-company">🏢 ${escapeHtml(job.firmenname)}</span>` : ''}
+                        ${job.standort ? `<span class="result-location">📍 ${escapeHtml(job.standort)}</span>` : ''}
+                    </div>
+                    ${job.textvorschau ? `<div class="result-preview">${escapeHtml(job.textvorschau)}</div>` : ''}
+                    ${keywordTags ? `<div class="result-keywords">${keywordTags}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    updateImportButton();
+}
+
+// Toggle job selection
+function toggleJobSelection(index) {
+    if (selectedJobs.has(index)) {
+        selectedJobs.delete(index);
+    } else {
+        selectedJobs.add(index);
+    }
+    renderSearchResults();
+}
+
+// Select all results
+function selectAllResults() {
+    searchResults.forEach((_, index) => selectedJobs.add(index));
+    renderSearchResults();
+}
+
+// Deselect all results
+function deselectAllResults() {
+    selectedJobs.clear();
+    renderSearchResults();
+}
+
+// Update import button state
+function updateImportButton() {
+    const btn = document.getElementById('importSelected');
+    const countEl = document.getElementById('importCount');
+    const count = selectedJobs.size;
+
+    countEl.textContent = count;
+    btn.disabled = count === 0;
+}
+
+// Import selected jobs
+async function importSelectedJobs() {
+    if (selectedJobs.size === 0) return;
+
+    const btn = document.getElementById('importSelected');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Importiere...';
+
+    // Get selected jobs
+    const jobsToImport = Array.from(selectedJobs).map(index => searchResults[index]);
+
+    try {
+        const response = await apiCall('/stepstone/import', 'POST', { jobs: jobsToImport });
+
+        if (response.success) {
+            showToast(response.message, 'success');
+            closeImportModal();
+            loadLeads(); // Refresh lead list
+        } else {
+            showToast('Import fehlgeschlagen', 'error');
+        }
+    } catch (error) {
+        showToast('Fehler beim Import: ' + error.message, 'error');
+        console.error(error);
+    } finally {
+        btn.innerHTML = originalContent;
+        btn.disabled = selectedJobs.size === 0;
+    }
+}

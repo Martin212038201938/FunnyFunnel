@@ -36,6 +36,9 @@
                 </button>
             </div>
             <div class="actions">
+                <button id="openImportModal" class="btn btn-success">
+                    <span>📥</span> StepStone Import
+                </button>
                 <button id="loadDemoData" class="btn btn-outline">
                     <span>📦</span> Demo-Daten
                 </button>
@@ -103,6 +106,106 @@
                 </button>
                 <button class="btn btn-primary" onclick="saveLetter()">
                     <span>💾</span> Speichern
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for StepStone Import -->
+    <div id="importModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2><span>📥</span> StepStone Import</h2>
+                <button class="modal-close" onclick="closeImportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Search Form -->
+                <div class="import-search-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Suchbegriffe (Keywords)</label>
+                            <input type="text" id="searchKeywords" class="form-input"
+                                   placeholder="KI, AI, GenAI, Copilot..." value="KI AI GenAI Copilot">
+                        </div>
+                        <div class="form-group">
+                            <label>Job-Titel Filter</label>
+                            <input type="text" id="searchJobTitle" class="form-input"
+                                   placeholder="z.B. Engineer, Manager...">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Stadt / Region</label>
+                            <input type="text" id="searchLocation" class="form-input"
+                                   placeholder="z.B. Berlin, München, Hamburg...">
+                        </div>
+                        <div class="form-group">
+                            <label>Umkreis (km)</label>
+                            <select id="searchRadius" class="filter-select">
+                                <option value="10">10 km</option>
+                                <option value="20">20 km</option>
+                                <option value="30" selected>30 km</option>
+                                <option value="50">50 km</option>
+                                <option value="100">100 km</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Veröffentlicht nach</label>
+                            <select id="searchDateFilter" class="filter-select">
+                                <option value="">Beliebig</option>
+                                <option value="1">Letzte 24 Stunden</option>
+                                <option value="3">Letzte 3 Tage</option>
+                                <option value="7" selected>Letzte 7 Tage</option>
+                                <option value="14">Letzte 14 Tage</option>
+                                <option value="30">Letzte 30 Tage</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Max. Seiten</label>
+                            <select id="searchMaxPages" class="filter-select">
+                                <option value="1">1 Seite</option>
+                                <option value="2" selected>2 Seiten</option>
+                                <option value="3">3 Seiten</option>
+                                <option value="5">5 Seiten</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="searchStepStone" class="btn btn-primary">
+                            <span>🔍</span> Suchen
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search Results -->
+                <div id="searchResults" class="search-results" style="display: none;">
+                    <div class="results-header">
+                        <h3 id="resultsCount">0 Ergebnisse gefunden</h3>
+                        <div class="results-actions">
+                            <button id="selectAllResults" class="btn btn-outline btn-small">
+                                Alle auswählen
+                            </button>
+                            <button id="deselectAllResults" class="btn btn-outline btn-small">
+                                Alle abwählen
+                            </button>
+                        </div>
+                    </div>
+                    <div id="resultsList" class="results-list">
+                        <!-- Results will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="searchLoading" class="search-loading" style="display: none;">
+                    <div class="loading">StepStone wird durchsucht...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeImportModal()">Abbrechen</button>
+                <button id="importSelected" class="btn btn-success" disabled>
+                    <span>📥</span> <span id="importCount">0</span> ausgewählte importieren
                 </button>
             </div>
         </div>

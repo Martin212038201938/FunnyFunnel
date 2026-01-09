@@ -1087,3 +1087,229 @@ body::before {
 .animate-slide-up {
     animation: slideUp 0.4s ease-out;
 }
+
+/* ==================== Import Modal Styles ==================== */
+
+.modal-large {
+    max-width: 900px;
+}
+
+.modal-large .modal-body {
+    max-height: 70vh;
+}
+
+/* Import Search Form */
+.import-search-form {
+    background: var(--bg-tertiary);
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-row:last-child {
+    margin-bottom: 0;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+/* Search Results */
+.search-results {
+    margin-top: 24px;
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.results-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.results-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+/* Result Item */
+.result-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.result-item:hover {
+    border-color: var(--primary);
+    background: var(--bg-card-hover);
+}
+
+.result-item.selected {
+    border-color: var(--success);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.result-checkbox {
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    background: var(--bg-secondary);
+    margin-top: 2px;
+}
+
+.result-checkbox:checked {
+    background: linear-gradient(135deg, var(--success), #059669);
+    border-color: var(--success);
+}
+
+.result-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 6px;
+    width: 5px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.result-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.result-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.result-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.result-company,
+.result-location {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.result-preview {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.result-keywords {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.result-keywords .keyword-tag {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+}
+
+/* Search Loading */
+.search-loading {
+    padding: 40px;
+    text-align: center;
+}
+
+/* Empty Results */
+.empty-results {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+}
+
+.empty-results h4 {
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+/* Responsive Import Modal */
+@media (max-width: 768px) {
+    .modal-large {
+        max-width: 100%;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .results-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .result-item {
+        flex-direction: column;
+    }
+
+    .result-checkbox {
+        margin-top: 0;
+    }
+
+    .result-meta {
+        gap: 8px;
+    }
+}

@@ -382,3 +382,131 @@ def seed_demo_data():
     db.session.commit()
 
     return jsonify({'message': f'Demo-Daten erfolgreich geladen', 'count': len(demo_leads)})
+
+
+# ==================== StepStone Import API ====================
+
+@api_bp.route('/stepstone/search', methods=['POST'])
+def search_stepstone():
+    """
+    Search StepStone for job listings.
+
+    Request body:
+    {
+        "keywords": "AI Engineer",
+        "location": "Berlin",
+        "radius": 30,
+        "date_filter": 7,
+        "job_title_filter": "Engineer",
+        "max_pages": 2
+    }
+    """
+    from app.stepstone import stepstone_service
+
+    data = request.json or {}
+
+    keywords = data.get('keywords', 'KI AI GenAI Copilot')
+    location = data.get('location')
+    radius = data.get('radius', 30)
+    date_filter = data.get('date_filter')  # 1, 3, 7, 14, 30 days
+    job_title_filter = data.get('job_title_filter')
+    max_pages = min(data.get('max_pages', 2), 5)  # Limit to 5 pages
+
+    try:
+        jobs = stepstone_service.search_jobs(
+            keywords=keywords,
+            location=location,
+            radius=radius,
+            max_pages=max_pages,
+            date_filter=date_filter,
+            job_title_filter=job_title_filter
+        )
+
+        return jsonify({
+            'success': True,
+            'count': len(jobs),
+            'jobs': jobs
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'jobs': []
+        }), 500
+
+
+@api_bp.route('/stepstone/import', methods=['POST'])
+def import_stepstone_jobs():
+    """
+    Import selected jobs from StepStone search results as leads.
+
+    Request body:
+    {
+        "jobs": [
+            {
+                "titel": "...",
+                "firmenname": "...",
+                "quelle_url": "...",
+                ...
+            }
+        ]
+    }
+    """
+    data = request.json or {}
+    jobs = data.get('jobs', [])
+
+    if not jobs:
+        return jsonify({'error': 'Keine Jobs zum Importieren'}), 400
+
+    imported = 0
+    skipped = 0
+
+    for job in jobs:
+        # Check if already exists by URL
+        if job.get('quelle_url'):
+            existing = Lead.query.filter_by(quelle_url=job['quelle_url']).first()
+            if existing:
+                skipped += 1
+                continue
+
+        # Create new lead
+        keywords = job.get('keywords', [])
+        if isinstance(keywords, list):
+            keywords = ','.join(keywords)
+
+        lead = Lead(
+            titel=job.get('titel', 'Unbekannter Titel'),
+            quelle=job.get('quelle', 'StepStone'),
+            quelle_url=job.get('quelle_url'),
+            keywords=keywords,
+            textvorschau=job.get('textvorschau'),
+            firmenname=job.get('firmenname'),
+            status=LeadStatus.NEU.value
+        )
+
+        db.session.add(lead)
+        imported += 1
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'imported': imported,
+        'skipped': skipped,
+        'message': f'{imported} Leads importiert, {skipped} übersprungen (bereits vorhanden)'
+    })
+
+
+@api_bp.route('/stepstone/regions', methods=['GET'])
+def get_stepstone_regions():
+    """Get available German regions for filtering."""
+    from app.stepstone import StepStoneService
+    return jsonify(StepStoneService.get_regions())
+
+
+@api_bp.route('/stepstone/keywords', methods=['GET'])
+def get_ai_keywords():
+    """Get predefined AI-related keywords."""
+    from app.stepstone import StepStoneService
+    return jsonify(StepStoneService.get_ai_keywords())
