@@ -121,60 +121,53 @@ def activate_lead(lead_id):
 @api_bp.route('/leads/<int:lead_id>/research', methods=['POST'])
 def research_lead(lead_id):
     """
-    Simulate research for a lead.
-    In production, this would call external APIs for:
-    - Full job posting text
-    - Company website & imprint
-    - LinkedIn profiles
+    Research company information for a lead using Perplexity AI.
+    Finds real company data: website, address, email, and decision makers.
     """
+    from app.perplexity import PerplexityService
+
     lead = Lead.query.get_or_404(lead_id)
 
-    if lead.status not in [LeadStatus.AKTIVIERT.value]:
+    # Allow research for aktiviert status OR if company data is missing
+    if lead.status not in [LeadStatus.AKTIVIERT.value, LeadStatus.RECHERCHIERT.value]:
         return jsonify({'error': 'Lead muss zuerst aktiviert werden'}), 400
 
-    # Simulated research data (in production: real API calls)
-    # Full text simulation
-    lead.volltext = f"""
-{lead.textvorschau or lead.titel}
+    try:
+        perplexity = PerplexityService()
 
-Wir suchen eine/n engagierte/n Mitarbeiter/in für unser wachsendes Team.
+        # Research company information
+        research_result = perplexity.research_company(
+            company_name=lead.firmenname or "Unbekannt",
+            job_title=lead.titel,
+            location=lead.standort
+        )
 
-Ihre Aufgaben:
-- Entwicklung und Implementierung von KI-Lösungen
-- Zusammenarbeit mit cross-funktionalen Teams
-- Evaluation neuer Technologien im Bereich GenAI und Copilot
+        # Update lead with researched data (only if we found something)
+        if research_result.get('firmen_website'):
+            lead.firmen_website = research_result['firmen_website']
+        if research_result.get('firmen_adresse'):
+            lead.firmen_adresse = research_result['firmen_adresse']
+        if research_result.get('firmen_email'):
+            lead.firmen_email = research_result['firmen_email']
+        if research_result.get('ansprechpartner_name'):
+            lead.ansprechpartner_name = research_result['ansprechpartner_name']
+        if research_result.get('ansprechpartner_rolle'):
+            lead.ansprechpartner_rolle = research_result['ansprechpartner_rolle']
+        if research_result.get('ansprechpartner_linkedin'):
+            lead.ansprechpartner_linkedin = research_result['ansprechpartner_linkedin']
+            lead.ansprechpartner_quelle = 'LinkedIn (via Perplexity)'
 
-Ihr Profil:
-- Erfahrung mit Machine Learning und KI-Technologien
-- Kenntnisse in Python, TensorFlow oder PyTorch
-- Begeisterung für innovative Technologien
+        # Update status to recherchiert
+        lead.status = LeadStatus.RECHERCHIERT.value
+        db.session.commit()
 
-Wir bieten:
-- Flexible Arbeitszeiten
-- Moderne Arbeitsumgebung
-- Weiterbildungsmöglichkeiten
-"""
+        return jsonify(lead.to_dict())
 
-    # Company research simulation
-    if not lead.firmen_website:
-        lead.firmen_website = f"https://www.{lead.firmenname.lower().replace(' ', '-')}.de" if lead.firmenname else None
-    if not lead.firmen_adresse:
-        lead.firmen_adresse = "Musterstraße 123, 10115 Berlin"
-    if not lead.firmen_email:
-        lead.firmen_email = f"info@{lead.firmenname.lower().replace(' ', '-')}.de" if lead.firmenname else None
-
-    # Contact person simulation (CEO, CTO, CIO, Head of L&D)
-    rollen = ['CEO', 'CTO', 'CIO', 'Head of Learning & Development', 'Chief Digital Officer']
-    import random
-    lead.ansprechpartner_name = random.choice(['Dr. Thomas Müller', 'Sarah Schmidt', 'Michael Weber', 'Anna Fischer', 'Christian Bauer'])
-    lead.ansprechpartner_rolle = random.choice(rollen)
-    lead.ansprechpartner_linkedin = f"https://linkedin.com/in/{lead.ansprechpartner_name.lower().replace(' ', '-').replace('.', '')}"
-    lead.ansprechpartner_quelle = 'LinkedIn'
-
-    lead.status = LeadStatus.RECHERCHIERT.value
-    db.session.commit()
-
-    return jsonify(lead.to_dict())
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"Research error for lead {lead_id}: {e}")
+        return jsonify({'error': f'Recherche fehlgeschlagen: {str(e)}'}), 500
 
 
 @api_bp.route('/leads/<int:lead_id>/generate-letter', methods=['POST'])

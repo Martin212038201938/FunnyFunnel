@@ -64,6 +64,11 @@ jobs:
             # Ensure instance directory exists for SQLite
             mkdir -p instance
 
+            # Create .env file with secrets (secure - not in repo)
+            echo "FLASK_ENV=production" > .env
+            echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+            echo "PERPLEXITY_API_KEY=${{ secrets.PERPLEXITY_API_KEY }}" >> .env
+
             # Restart application with pm2
             if pm2 list | grep -q "funnyfunnel"; then
               echo "Restarting funnyfunnel..."
