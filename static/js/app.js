@@ -124,7 +124,8 @@ function createLeadCard(lead, index) {
     const keywordTags = keywords.map(k => `<span class="keyword-tag">${escapeHtml(k)}</span>`).join('');
 
     const isActivated = lead.status !== 'neu';
-    const canResearch = lead.status === 'aktiviert';
+    // Research is always available - no status restriction
+    const canResearch = true;
     const canGenerateLetter = ['recherchiert', 'anschreiben_erstellt', 'angeschrieben', 'antwort_erhalten'].includes(lead.status);
     const isSelected = selectedLeads.has(lead.id);
 
