@@ -433,30 +433,29 @@ function animateValue(element, start, end, duration) {
 }
 
 // Update statistics with animation
-function updateStats() {
-    const stats = {
-        total: leads.length,
-        neu: leads.filter(l => l.status === 'neu').length,
-        aktiviert: leads.filter(l => l.status === 'aktiviert').length,
-        recherchiert: leads.filter(l => l.status === 'recherchiert').length,
-        anschreiben: leads.filter(l => ['anschreiben_erstellt', 'angeschrieben', 'antwort_erhalten'].includes(l.status)).length
-    };
+async function updateStats() {
+    try {
+        const stats = await apiCall('/stats');
 
-    const elements = {
-        total: document.getElementById('statTotal'),
-        neu: document.getElementById('statNeu'),
-        aktiviert: document.getElementById('statAktiviert'),
-        recherchiert: document.getElementById('statRecherchiert'),
-        anschreiben: document.getElementById('statAnschreiben')
-    };
+        const elements = {
+            total: document.getElementById('statTotal'),
+            neu: document.getElementById('statNeu'),
+            aktiviert: document.getElementById('statAktiviert'),
+            recherchiert: document.getElementById('statRecherchiert'),
+            anschreiben: document.getElementById('statAnschreiben')
+        };
 
-    Object.entries(stats).forEach(([key, value]) => {
-        const el = elements[key];
-        const current = parseInt(el.textContent) || 0;
-        if (current !== value) {
-            animateValue(el, current, value, 500);
-        }
-    });
+        Object.entries(elements).forEach(([key, el]) => {
+            if (!el) return;
+            const value = stats[key] || 0;
+            const current = parseInt(el.textContent) || 0;
+            if (current !== value) {
+                animateValue(el, current, value, 500);
+            }
+        });
+    } catch (error) {
+        console.error('Failed to update stats:', error);
+    }
 }
 
 // Show toast notification

@@ -294,6 +294,41 @@ def get_status_options():
     return jsonify(Lead.get_status_options())
 
 
+@api_bp.route('/stats', methods=['GET'])
+def get_stats():
+    """Get lead statistics by status."""
+    from sqlalchemy import func
+
+    # Get counts per status
+    status_counts = db.session.query(
+        Lead.status, func.count(Lead.id)
+    ).group_by(Lead.status).all()
+
+    # Build stats dict
+    stats = {
+        'total': Lead.query.count(),
+        'neu': 0,
+        'aktiviert': 0,
+        'recherchiert': 0,
+        'anschreiben_erstellt': 0,
+        'angeschrieben': 0,
+        'antwort_erhalten': 0
+    }
+
+    for status, count in status_counts:
+        if status in stats:
+            stats[status] = count
+
+    # Combined anschreiben count
+    stats['anschreiben'] = (
+        stats['anschreiben_erstellt'] +
+        stats['angeschrieben'] +
+        stats['antwort_erhalten']
+    )
+
+    return jsonify(stats)
+
+
 # ==================== StepStone Import API ====================
 
 @api_bp.route('/stepstone/search', methods=['POST'])
