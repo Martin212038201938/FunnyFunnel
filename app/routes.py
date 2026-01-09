@@ -121,60 +121,51 @@ def activate_lead(lead_id):
 @api_bp.route('/leads/<int:lead_id>/research', methods=['POST'])
 def research_lead(lead_id):
     """
-    Simulate research for a lead.
-    In production, this would call external APIs for:
-    - Full job posting text
-    - Company website & imprint
-    - LinkedIn profiles
+    Research company information for a lead using Perplexity AI.
+    Finds real company data: website, address, email, and decision makers.
+    No activation required - can be called from any lead status.
     """
+    from app.perplexity import PerplexityService
+
     lead = Lead.query.get_or_404(lead_id)
 
-    if lead.status not in [LeadStatus.AKTIVIERT.value]:
-        return jsonify({'error': 'Lead muss zuerst aktiviert werden'}), 400
+    # Research can be triggered from any status - no restrictions
+    try:
+        perplexity = PerplexityService()
 
-    # Simulated research data (in production: real API calls)
-    # Full text simulation
-    lead.volltext = f"""
-{lead.textvorschau or lead.titel}
+        # Research company information
+        research_result = perplexity.research_company(
+            company_name=lead.firmenname or "Unbekannt",
+            job_title=lead.titel,
+            location=lead.standort
+        )
 
-Wir suchen eine/n engagierte/n Mitarbeiter/in für unser wachsendes Team.
+        # Update lead with researched data (only if we found something)
+        if research_result.get('firmen_website'):
+            lead.firmen_website = research_result['firmen_website']
+        if research_result.get('firmen_adresse'):
+            lead.firmen_adresse = research_result['firmen_adresse']
+        if research_result.get('firmen_email'):
+            lead.firmen_email = research_result['firmen_email']
+        if research_result.get('ansprechpartner_name'):
+            lead.ansprechpartner_name = research_result['ansprechpartner_name']
+        if research_result.get('ansprechpartner_rolle'):
+            lead.ansprechpartner_rolle = research_result['ansprechpartner_rolle']
+        if research_result.get('ansprechpartner_linkedin'):
+            lead.ansprechpartner_linkedin = research_result['ansprechpartner_linkedin']
+            lead.ansprechpartner_quelle = 'LinkedIn (via Perplexity)'
 
-Ihre Aufgaben:
-- Entwicklung und Implementierung von KI-Lösungen
-- Zusammenarbeit mit cross-funktionalen Teams
-- Evaluation neuer Technologien im Bereich GenAI und Copilot
+        # Update status to recherchiert
+        lead.status = LeadStatus.RECHERCHIERT.value
+        db.session.commit()
 
-Ihr Profil:
-- Erfahrung mit Machine Learning und KI-Technologien
-- Kenntnisse in Python, TensorFlow oder PyTorch
-- Begeisterung für innovative Technologien
+        return jsonify(lead.to_dict())
 
-Wir bieten:
-- Flexible Arbeitszeiten
-- Moderne Arbeitsumgebung
-- Weiterbildungsmöglichkeiten
-"""
-
-    # Company research simulation
-    if not lead.firmen_website:
-        lead.firmen_website = f"https://www.{lead.firmenname.lower().replace(' ', '-')}.de" if lead.firmenname else None
-    if not lead.firmen_adresse:
-        lead.firmen_adresse = "Musterstraße 123, 10115 Berlin"
-    if not lead.firmen_email:
-        lead.firmen_email = f"info@{lead.firmenname.lower().replace(' ', '-')}.de" if lead.firmenname else None
-
-    # Contact person simulation (CEO, CTO, CIO, Head of L&D)
-    rollen = ['CEO', 'CTO', 'CIO', 'Head of Learning & Development', 'Chief Digital Officer']
-    import random
-    lead.ansprechpartner_name = random.choice(['Dr. Thomas Müller', 'Sarah Schmidt', 'Michael Weber', 'Anna Fischer', 'Christian Bauer'])
-    lead.ansprechpartner_rolle = random.choice(rollen)
-    lead.ansprechpartner_linkedin = f"https://linkedin.com/in/{lead.ansprechpartner_name.lower().replace(' ', '-').replace('.', '')}"
-    lead.ansprechpartner_quelle = 'LinkedIn'
-
-    lead.status = LeadStatus.RECHERCHIERT.value
-    db.session.commit()
-
-    return jsonify(lead.to_dict())
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"Research error for lead {lead_id}: {e}")
+        return jsonify({'error': f'Recherche fehlgeschlagen: {str(e)}'}), 500
 
 
 @api_bp.route('/leads/<int:lead_id>/generate-letter', methods=['POST'])
@@ -294,91 +285,168 @@ def get_status_options():
     return jsonify(Lead.get_status_options())
 
 
-@api_bp.route('/seed-demo', methods=['POST'])
-def seed_demo_data():
-    """Seed database with demo data for testing."""
-    demo_leads = [
-        {
-            'titel': 'AI Engineer - GenAI & Large Language Models (m/w/d)',
-            'quelle': 'StepStone',
-            'quelle_url': 'https://www.stepstone.de/stellenangebote--AI-Engineer-GenAI-Berlin',
-            'keywords': 'GenAI,LLM,Python,Machine Learning',
-            'textvorschau': 'Wir suchen einen erfahrenen AI Engineer für unser GenAI-Team...',
-            'firmenname': 'TechVision GmbH'
-        },
-        {
-            'titel': 'Senior Developer - Microsoft Copilot Integration',
-            'quelle': 'StepStone',
-            'quelle_url': 'https://www.stepstone.de/stellenangebote--Senior-Developer-Copilot-München',
-            'keywords': 'Copilot,Microsoft,Azure,Integration',
-            'textvorschau': 'Für unsere Digitalisierungsabteilung suchen wir einen Senior Developer...',
-            'firmenname': 'Digital Solutions AG'
-        },
-        {
-            'titel': 'KI-Projektmanager (m/w/d) - Schwerpunkt ChatGPT',
-            'quelle': 'StepStone',
-            'quelle_url': 'https://www.stepstone.de/stellenangebote--KI-Projektmanager-Hamburg',
-            'keywords': 'KI,ChatGPT,Projektmanagement,Agile',
-            'textvorschau': 'Als KI-Projektmanager leiten Sie innovative Projekte im Bereich ChatGPT...',
-            'firmenname': 'Innovation Hub GmbH'
-        },
-        {
-            'titel': 'Machine Learning Engineer - Computer Vision & GenAI',
-            'quelle': 'StepStone',
-            'quelle_url': 'https://www.stepstone.de/stellenangebote--ML-Engineer-Frankfurt',
-            'keywords': 'Machine Learning,Computer Vision,GenAI,TensorFlow',
-            'textvorschau': 'Entwickeln Sie zukunftsweisende ML-Modelle in unserem Data Science Team...',
-            'firmenname': 'DataDriven Systems'
-        },
-        {
-            'titel': 'Head of AI & Automation (m/w/d)',
-            'quelle': 'StepStone',
-            'quelle_url': 'https://www.stepstone.de/stellenangebote--Head-AI-Automation-Düsseldorf',
-            'keywords': 'AI,Automation,Leadership,Digital Transformation',
-            'textvorschau': 'Führen Sie unser AI-Team und gestalten Sie die digitale Zukunft...',
-            'firmenname': 'Enterprise Tech AG'
-        },
-        {
-            'titel': 'Prompt Engineer - Generative AI Applications',
-            'quelle': 'StepStone',
-            'quelle_url': 'https://www.stepstone.de/stellenangebote--Prompt-Engineer-Köln',
-            'keywords': 'Prompt Engineering,GenAI,NLP,LLM',
-            'textvorschau': 'Als Prompt Engineer optimieren Sie unsere KI-gestützten Anwendungen...',
-            'firmenname': 'AI Startup Hub'
-        },
-        {
-            'titel': 'Data Scientist - Copilot & AI Assistant Development',
-            'quelle': 'StepStone',
-            'quelle_url': 'https://www.stepstone.de/stellenangebote--Data-Scientist-Stuttgart',
-            'keywords': 'Copilot,AI Assistant,Data Science,Python',
-            'textvorschau': 'Unterstützen Sie unser Team bei der Entwicklung intelligenter Assistenten...',
-            'firmenname': 'SmartWork Solutions'
-        },
-        {
-            'titel': 'AI Solutions Architect (m/w/d) - Enterprise',
-            'quelle': 'StepStone',
-            'quelle_url': 'https://www.stepstone.de/stellenangebote--AI-Solutions-Architect-Leipzig',
-            'keywords': 'AI,Solutions Architect,Enterprise,Cloud',
-            'textvorschau': 'Designen Sie skalierbare KI-Lösungen für Großunternehmen...',
-            'firmenname': 'CloudFirst GmbH'
-        }
-    ]
+@api_bp.route('/stats', methods=['GET'])
+def get_stats():
+    """Get lead statistics by status."""
+    from sqlalchemy import func
 
-    for lead_data in demo_leads:
-        # Check if lead already exists
-        existing = Lead.query.filter_by(titel=lead_data['titel']).first()
-        if not existing:
-            lead = Lead(
-                titel=lead_data['titel'],
-                quelle=lead_data['quelle'],
-                quelle_url=lead_data['quelle_url'],
-                keywords=lead_data['keywords'],
-                textvorschau=lead_data['textvorschau'],
-                firmenname=lead_data['firmenname'],
-                status=LeadStatus.NEU.value
-            )
-            db.session.add(lead)
+    # Get counts per status
+    status_counts = db.session.query(
+        Lead.status, func.count(Lead.id)
+    ).group_by(Lead.status).all()
+
+    # Build stats dict
+    stats = {
+        'total': Lead.query.count(),
+        'neu': 0,
+        'aktiviert': 0,
+        'recherchiert': 0,
+        'anschreiben_erstellt': 0,
+        'angeschrieben': 0,
+        'antwort_erhalten': 0
+    }
+
+    for status, count in status_counts:
+        if status in stats:
+            stats[status] = count
+
+    # Combined anschreiben count
+    stats['anschreiben'] = (
+        stats['anschreiben_erstellt'] +
+        stats['angeschrieben'] +
+        stats['antwort_erhalten']
+    )
+
+    return jsonify(stats)
+
+
+# ==================== StepStone Import API ====================
+
+@api_bp.route('/stepstone/search', methods=['POST'])
+def search_stepstone():
+    """
+    Search StepStone for job listings.
+
+    Request body:
+    {
+        "keywords": "AI Engineer",
+        "location": "Berlin",
+        "radius": 30,
+        "date_filter": 7,
+        "job_title_filter": "Engineer",
+        "max_pages": 2
+    }
+    """
+    from app.stepstone import stepstone_service
+
+    data = request.json or {}
+
+    keywords = data.get('keywords', 'KI AI GenAI Copilot')
+    location = data.get('location')
+    radius = data.get('radius', 30)
+    date_filter = data.get('date_filter')  # 1, 3, 7, 14, 30 days
+    job_title_filter = data.get('job_title_filter')
+    max_pages = min(data.get('max_pages', 1), 3)  # Limit to 3 pages
+    max_results = data.get('max_results', 10)  # Default to 10 results
+
+    try:
+        jobs = stepstone_service.search_jobs(
+            keywords=keywords,
+            location=location,
+            radius=radius,
+            max_pages=max_pages,
+            date_filter=date_filter,
+            job_title_filter=job_title_filter
+        )
+
+        # Limit results to requested amount (default 10)
+        jobs = jobs[:max_results]
+
+        return jsonify({
+            'success': True,
+            'count': len(jobs),
+            'jobs': jobs
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'jobs': []
+        }), 500
+
+
+@api_bp.route('/stepstone/import', methods=['POST'])
+def import_stepstone_jobs():
+    """
+    Import selected jobs from StepStone search results as leads.
+
+    Request body:
+    {
+        "jobs": [
+            {
+                "titel": "...",
+                "firmenname": "...",
+                "quelle_url": "...",
+                ...
+            }
+        ]
+    }
+    """
+    data = request.json or {}
+    jobs = data.get('jobs', [])
+
+    if not jobs:
+        return jsonify({'error': 'Keine Jobs zum Importieren'}), 400
+
+    imported = 0
+    skipped = 0
+
+    for job in jobs:
+        # Check if already exists by URL
+        if job.get('quelle_url'):
+            existing = Lead.query.filter_by(quelle_url=job['quelle_url']).first()
+            if existing:
+                skipped += 1
+                continue
+
+        # Create new lead
+        keywords = job.get('keywords', [])
+        if isinstance(keywords, list):
+            keywords = ','.join(keywords)
+
+        lead = Lead(
+            titel=job.get('titel', 'Unbekannter Titel'),
+            quelle=job.get('quelle', 'StepStone'),
+            quelle_url=job.get('quelle_url'),
+            keywords=keywords,
+            textvorschau=job.get('textvorschau'),
+            firmenname=job.get('firmenname'),
+            status=LeadStatus.NEU.value
+        )
+
+        db.session.add(lead)
+        imported += 1
 
     db.session.commit()
 
-    return jsonify({'message': f'Demo-Daten erfolgreich geladen', 'count': len(demo_leads)})
+    return jsonify({
+        'success': True,
+        'imported': imported,
+        'skipped': skipped,
+        'message': f'{imported} Leads importiert, {skipped} übersprungen (bereits vorhanden)'
+    })
+
+
+@api_bp.route('/stepstone/regions', methods=['GET'])
+def get_stepstone_regions():
+    """Get available German regions for filtering."""
+    from app.stepstone import StepStoneService
+    return jsonify(StepStoneService.get_regions())
+
+
+@api_bp.route('/stepstone/keywords', methods=['GET'])
+def get_ai_keywords():
+    """Get predefined AI-related keywords."""
+    from app.stepstone import StepStoneService
+    return jsonify(StepStoneService.get_ai_keywords())
