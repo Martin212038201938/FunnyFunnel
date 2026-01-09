@@ -302,6 +302,12 @@ body::before {
     font-size: 0.8rem;
 }
 
+.btn-large {
+    padding: 16px 32px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
 .btn-icon {
     width: 40px;
     height: 40px;

@@ -410,7 +410,8 @@ def search_stepstone():
     radius = data.get('radius', 30)
     date_filter = data.get('date_filter')  # 1, 3, 7, 14, 30 days
     job_title_filter = data.get('job_title_filter')
-    max_pages = min(data.get('max_pages', 2), 5)  # Limit to 5 pages
+    max_pages = min(data.get('max_pages', 1), 3)  # Limit to 3 pages
+    max_results = data.get('max_results', 10)  # Default to 10 results
 
     try:
         jobs = stepstone_service.search_jobs(
@@ -421,6 +422,9 @@ def search_stepstone():
             date_filter=date_filter,
             job_title_filter=job_title_filter
         )
+
+        # Limit results to requested amount (default 10)
+        jobs = jobs[:max_results]
 
         return jsonify({
             'success': True,

@@ -553,7 +553,7 @@ async function searchStepStone() {
         radius: parseInt(document.getElementById('searchRadius').value) || 30,
         date_filter: document.getElementById('searchDateFilter').value || null,
         job_title_filter: document.getElementById('searchJobTitle').value || null,
-        max_pages: parseInt(document.getElementById('searchMaxPages').value) || 2
+        max_results: parseInt(document.getElementById('searchMaxResults').value) || 10
     };
 
     try {
