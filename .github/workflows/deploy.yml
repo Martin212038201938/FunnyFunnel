@@ -29,45 +29,50 @@ jobs:
           port: 22
           script: |
             cd ~
-            
+
             # Download and extract code from GitHub
             echo "Downloading code from GitHub..."
             curl -L -o main.tar.gz https://github.com/Martin212038201938/FunnyFunnel/archive/refs/heads/main.tar.gz
-            
+
             # Extract to temporary directory
             rm -rf FunnyFunnel-main
             tar -xzf main.tar.gz
             rm main.tar.gz
-            
+
             # Sync to funnyfunnel directory (keeping venv)
             mkdir -p funnyfunnel
             rsync -av --exclude='venv' --exclude='instance' --delete FunnyFunnel-main/ funnyfunnel/
             rm -rf FunnyFunnel-main
-            
+
             cd funnyfunnel
-            
+
             # Create virtual environment if not exists
             if [ ! -d "venv" ]; then
               echo "Creating virtual environment..."
               python3 -m venv venv
             fi
-            
+
             # Activate venv and install dependencies
             source venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
-            
+
             # Ensure instance directory exists
             mkdir -p instance
-                  chmod 777 instance
 
-                  export DATABASE_URL='${{ secrets.DATABASE_URL }}'
+            # Create .env file with secrets
+            echo "FLASK_ENV=production" > .env
+            echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+            echo "PERPLEXITY_API_KEY=${{ secrets.PERPLEXITY_API_KEY }}" >> .env
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+
             # Restart application with pm2
             if pm2 list | grep -q "funnyfunnel"; then
               echo "Restarting funnyfunnel..."
               pm2 restart funnyfunnel
             else
               echo "Starting funnyfunnel..."
-      pm2 start "venv/bin/gunicorn -w 2 -b 127.0.0.1:8000 wsgi:application" --name funnyfunnel            fi
-            
+              pm2 start "venv/bin/gunicorn -w 2 -b 127.0.0.1:8000 wsgi:application" --name funnyfunnel
+            fi
+
             echo "Deployment complete!"
