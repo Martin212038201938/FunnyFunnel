@@ -296,14 +296,42 @@ async function researchLead(leadId, btn) {
     btn.disabled = true;
     btn.innerHTML = '<span>⏳</span> Recherchiere...';
 
+    // Find the lead card and show loading state in status badge
+    const leadCard = btn.closest('.lead-card');
+    const statusBadge = leadCard ? leadCard.querySelector('.status-badge') : null;
+    const originalStatusHtml = statusBadge ? statusBadge.innerHTML : '';
+    const originalStatusClass = statusBadge ? statusBadge.className : '';
+
+    if (statusBadge) {
+        statusBadge.innerHTML = '⏳ Recherche läuft...';
+        statusBadge.className = 'status-badge status-in-arbeit';
+    }
+
     try {
-        await apiCall(`/leads/${leadId}/research`, 'POST');
-        showToast('Recherche abgeschlossen', 'success');
-        loadLeads();
+        const updatedLead = await apiCall(`/leads/${leadId}/research`, 'POST');
+
+        // Update the lead in the local array
+        const leadIndex = leads.findIndex(l => l.id === leadId);
+        if (leadIndex !== -1) {
+            leads[leadIndex] = updatedLead;
+        }
+
+        // Re-render just this lead card to show updated data
+        if (leadCard) {
+            const newCardHtml = createLeadCard(updatedLead, leadIndex);
+            leadCard.outerHTML = newCardHtml;
+        }
+
+        showToast('Recherche abgeschlossen - Firmendaten aktualisiert', 'success');
+        updateStats();
     } catch (error) {
         showToast(error.message, 'error');
         btn.innerHTML = originalContent;
         btn.disabled = false;
+        if (statusBadge) {
+            statusBadge.innerHTML = originalStatusHtml;
+            statusBadge.className = originalStatusClass;
+        }
     }
 }
 

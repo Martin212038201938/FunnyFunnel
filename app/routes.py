@@ -128,10 +128,6 @@ def research_lead(lead_id):
 
     lead = Lead.query.get_or_404(lead_id)
 
-    # Allow research for aktiviert status OR if company data is missing
-    if lead.status not in [LeadStatus.AKTIVIERT.value, LeadStatus.RECHERCHIERT.value]:
-        return jsonify({'error': 'Lead muss zuerst aktiviert werden'}), 400
-
     try:
         perplexity = PerplexityService()
 

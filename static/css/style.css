@@ -676,6 +676,20 @@ body::before {
     50% { opacity: 0.5; transform: translateY(-50%) scale(0.8); }
 }
 
+.status-in-arbeit {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    padding-left: 22px;
+    animation: pulse-status 1.5s ease-in-out infinite;
+}
+.status-in-arbeit::before { background: #fbbf24; }
+
+@keyframes pulse-status {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
 .status-neu {
     background: rgba(245, 158, 11, 0.15);
     color: var(--warning-light);
