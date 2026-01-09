@@ -681,3 +681,10 @@ async function importSelectedJobs() {
         btn.disabled = selectedJobs.size === 0;
     }
 }
+
+// Make functions globally available for onclick handlers
+window.toggleJobSelection = toggleJobSelection;
+window.openImportModal = openImportModal;
+window.closeImportModal = closeImportModal;
+window.selectAllResults = selectAllResults;
+window.deselectAllResults = deselectAllResults;
