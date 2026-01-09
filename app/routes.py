@@ -123,11 +123,13 @@ def research_lead(lead_id):
     """
     Research company information for a lead using Perplexity AI.
     Finds real company data: website, address, email, and decision makers.
+    No activation required - can be called from any lead status.
     """
     from app.perplexity import PerplexityService
 
     lead = Lead.query.get_or_404(lead_id)
 
+    # Research can be triggered from any status - no restrictions
     try:
         perplexity = PerplexityService()
 
