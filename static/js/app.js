@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     document.getElementById('applyFilters').addEventListener('click', loadLeads);
     document.getElementById('exportCSV').addEventListener('click', exportCSV);
-    document.getElementById('loadDemoData').addEventListener('click', loadDemoData);
 
     // Filter on Enter key
     document.getElementById('keywordFilter').addEventListener('keypress', (e) => {
@@ -410,24 +409,6 @@ async function exportCSV() {
     }
 }
 
-// Load demo data
-async function loadDemoData() {
-    const btn = document.getElementById('loadDemoData');
-    const originalContent = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> Lade...';
-
-    try {
-        await apiCall('/seed-demo', 'POST');
-        showToast('Demo-Daten geladen', 'success');
-        loadLeads();
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        btn.innerHTML = originalContent;
-        btn.disabled = false;
-    }
-}
 
 // Animate number counting
 function animateValue(element, start, end, duration) {
