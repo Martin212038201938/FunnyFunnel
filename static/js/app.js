@@ -112,10 +112,12 @@ function renderLeads() {
                 <p>Klicken Sie auf "StepStone Import" um Stellenanzeigen zu importieren.</p>
             </div>
         `;
+        updateBulkActionsUI();
         return;
     }
 
     leadListEl.innerHTML = leads.map((lead, index) => createLeadCard(lead, index)).join('');
+    updateBulkActionsUI();
 }
 
 // Create HTML for a single lead card
