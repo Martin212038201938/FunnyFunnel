@@ -3,6 +3,7 @@
 const API_BASE = '/api';
 let leads = [];
 let currentLeadId = null;
+let selectedLeads = new Set();
 
 // Status labels in German
 const STATUS_LABELS = {
@@ -126,19 +127,22 @@ function createLeadCard(lead, index) {
     const isActivated = lead.status !== 'neu';
     const canResearch = lead.status === 'aktiviert';
     const canGenerateLetter = ['recherchiert', 'anschreiben_erstellt', 'angeschrieben', 'antwort_erhalten'].includes(lead.status);
+    const isSelected = selectedLeads.has(lead.id);
 
     return `
-        <div class="lead-card" id="lead-${lead.id}" style="animation-delay: ${Math.min(index * 0.05, 0.3)}s">
-            <div class="lead-header" onclick="toggleLead(${lead.id})">
-                <input type="checkbox" class="lead-checkbox"
-                    ${isActivated ? 'checked disabled' : ''}
-                    onclick="event.stopPropagation(); activateLead(${lead.id})"
-                    title="${isActivated ? 'Bereits aktiviert' : 'Klicken zum Aktivieren'}">
-                <span class="lead-title">${escapeHtml(lead.titel)}</span>
-                <span class="lead-company">${escapeHtml(lead.firmenname || '-')}</span>
-                <div class="lead-keywords">${keywordTags}</div>
-                <span class="lead-status status-${lead.status}">${STATUS_LABELS[lead.status]}</span>
-                <span class="lead-expand">▼</span>
+        <div class="lead-card ${isSelected ? 'selected' : ''}" id="lead-${lead.id}" style="animation-delay: ${Math.min(index * 0.05, 0.3)}s">
+            <div class="lead-header">
+                <input type="checkbox" class="select-checkbox"
+                    ${isSelected ? 'checked' : ''}
+                    onclick="event.stopPropagation(); toggleLeadSelection(${lead.id})"
+                    title="Auswählen">
+                <div class="lead-header-content" onclick="toggleLead(${lead.id})">
+                    <span class="lead-title">${escapeHtml(lead.titel)}</span>
+                    <span class="lead-company">${escapeHtml(lead.firmenname || '-')}</span>
+                    <div class="lead-keywords">${keywordTags}</div>
+                    <span class="lead-status status-${lead.status}">${STATUS_LABELS[lead.status]}</span>
+                    <span class="lead-expand">▼</span>
+                </div>
             </div>
             <div class="lead-details">
                 ${renderLeadDetails(lead, canResearch, canGenerateLetter)}
@@ -678,9 +682,86 @@ async function importSelectedJobs() {
     }
 }
 
+// ==================== Lead Selection Functions ====================
+
+// Toggle selection of a single lead
+function toggleLeadSelection(leadId) {
+    if (selectedLeads.has(leadId)) {
+        selectedLeads.delete(leadId);
+    } else {
+        selectedLeads.add(leadId);
+    }
+    updateBulkActionsUI();
+    renderLeads();
+}
+
+// Toggle select all leads
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllLeads');
+    if (selectAllCheckbox.checked) {
+        leads.forEach(lead => selectedLeads.add(lead.id));
+    } else {
+        selectedLeads.clear();
+    }
+    updateBulkActionsUI();
+    renderLeads();
+}
+
+// Clear all selections
+function clearSelection() {
+    selectedLeads.clear();
+    document.getElementById('selectAllLeads').checked = false;
+    updateBulkActionsUI();
+    renderLeads();
+}
+
+// Delete all selected leads
+async function deleteSelectedLeads() {
+    if (selectedLeads.size === 0) return;
+
+    const count = selectedLeads.size;
+    if (!confirm(`${count} Lead(s) wirklich löschen?`)) return;
+
+    const deletePromises = Array.from(selectedLeads).map(leadId =>
+        apiCall(`/leads/${leadId}`, 'DELETE').catch(err => {
+            console.error(`Failed to delete lead ${leadId}:`, err);
+            return null;
+        })
+    );
+
+    try {
+        await Promise.all(deletePromises);
+        showToast(`${count} Lead(s) gelöscht`, 'success');
+        selectedLeads.clear();
+        loadLeads();
+    } catch (error) {
+        showToast('Fehler beim Löschen', 'error');
+    }
+}
+
+// Update bulk actions UI visibility and count
+function updateBulkActionsUI() {
+    const bulkActionsEl = document.getElementById('bulkActions');
+    const selectedCountEl = document.getElementById('selectedCount');
+    const selectAllCheckbox = document.getElementById('selectAllLeads');
+
+    if (selectedLeads.size > 0) {
+        bulkActionsEl.style.display = 'flex';
+        selectedCountEl.textContent = selectedLeads.size;
+        selectAllCheckbox.checked = selectedLeads.size === leads.length;
+    } else {
+        bulkActionsEl.style.display = 'none';
+        selectAllCheckbox.checked = false;
+    }
+}
+
 // Make functions globally available for onclick handlers
 window.toggleJobSelection = toggleJobSelection;
 window.openImportModal = openImportModal;
 window.closeImportModal = closeImportModal;
 window.selectAllResults = selectAllResults;
 window.deselectAllResults = deselectAllResults;
+window.toggleLeadSelection = toggleLeadSelection;
+window.toggleSelectAll = toggleSelectAll;
+window.clearSelection = clearSelection;
+window.deleteSelectedLeads = deleteSelectedLeads;
