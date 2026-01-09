@@ -149,17 +149,13 @@ function createLeadCard(lead, index) {
 
 // Render lead details section
 function renderLeadDetails(lead, canResearch, canGenerateLetter) {
+    // Use volltext if available, otherwise use textvorschau
+    const jobText = lead.volltext || lead.textvorschau || 'Keine Beschreibung verfügbar';
+
     return `
         <div class="detail-section">
             <h4><span>📄</span> Jobanzeige</h4>
-            ${lead.volltext ? `
-                <div class="fulltext-box">${escapeHtml(lead.volltext)}</div>
-            ` : `
-                <div class="detail-item">
-                    <span class="detail-label">Vorschau</span>
-                    <span class="detail-value">${escapeHtml(lead.textvorschau || 'Keine Vorschau verfügbar')}</span>
-                </div>
-            `}
+            <div class="fulltext-box">${escapeHtml(jobText).replace(/\n/g, '<br>')}</div>
             ${lead.quelle_url ? `
                 <p style="margin-top: 12px;">
                     <a href="${escapeHtml(lead.quelle_url)}" target="_blank" rel="noopener">

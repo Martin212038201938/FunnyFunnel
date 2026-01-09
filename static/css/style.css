@@ -734,14 +734,15 @@ body::before {
 .fulltext-box {
     background: var(--bg-tertiary);
     border: 1px solid var(--border);
-    padding: 20px;
+    padding: 24px;
     border-radius: var(--radius-md);
-    font-size: 0.9rem;
-    line-height: 1.8;
+    font-size: 0.95rem;
+    line-height: 1.9;
     white-space: pre-wrap;
-    max-height: 350px;
+    max-height: 600px;
     overflow-y: auto;
-    color: var(--text-secondary);
+    color: var(--text-primary);
+    word-wrap: break-word;
 }
 
 .letter-box {
