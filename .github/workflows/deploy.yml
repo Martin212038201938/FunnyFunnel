@@ -32,16 +32,16 @@ jobs:
 
             # Download and extract code from GitHub
             echo "Downloading code from GitHub..."
-            curl -L -o main.tar.gz https://github.com/Martin212038201938/FunnyFunnel/archive/refs/heads/main.tar.gz
+            curl -L -o main.tar.gz https://github.com/${{ github.repository }}/archive/refs/heads/main.tar.gz
 
             # Extract to temporary directory
             rm -rf FunnyFunnel-main
             tar -xzf main.tar.gz
             rm main.tar.gz
 
-            # Sync to funnyfunnel directory (keeping venv)
+            # Sync to funnyfunnel directory
             mkdir -p funnyfunnel
-            rsync -av --exclude='venv' --exclude='instance' --delete FunnyFunnel-main/ funnyfunnel/
+            rsync -av --exclude='venv' --exclude='instance' --exclude='.env' --delete FunnyFunnel-main/ funnyfunnel/
             rm -rf FunnyFunnel-main
 
             cd funnyfunnel
