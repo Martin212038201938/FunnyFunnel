@@ -2,7 +2,7 @@
 StepStone Job Search Service
 
 Scrapes job listings from StepStone.de based on search criteria.
-Falls back to demo data if scraping is not possible.
+Returns empty list if scraping fails - no demo data fallback.
 """
 
 import requests
@@ -12,7 +12,6 @@ from datetime import datetime, timedelta
 import re
 import json
 import time
-import random
 
 
 class StepStoneService:
@@ -60,290 +59,6 @@ class StepStoneService:
         'thueringen': 'Thüringen'
     }
 
-    # Demo job data for when scraping is not possible
-    DEMO_JOBS = [
-        {
-            'titel': 'Senior AI Engineer - Large Language Models (m/w/d)',
-            'firmenname': 'TechVision AI GmbH',
-            'standort': 'Berlin',
-            'textvorschau': '''Wir suchen einen erfahrenen AI Engineer für die Entwicklung und Optimierung von LLM-basierten Anwendungen.
-
-Ihre Aufgaben:
-• Entwicklung und Fine-Tuning von Large Language Models (GPT-4, Claude, Llama)
-• Integration von LLMs in bestehende Unternehmensanwendungen
-• Optimierung von Inference-Pipelines für Produktion
-• Zusammenarbeit mit dem Produktteam zur Definition von AI-Features
-• Mentoring von Junior-Entwicklern
-
-Ihr Profil:
-• Mindestens 5 Jahre Erfahrung in Machine Learning / AI
-• Fundierte Kenntnisse in Python, PyTorch oder TensorFlow
-• Erfahrung mit LLM-APIs (OpenAI, Anthropic, Hugging Face)
-• Kenntnisse in MLOps und Cloud-Infrastruktur (AWS, GCP, Azure)
-• Sehr gute Deutsch- und Englischkenntnisse
-
-Wir bieten:
-• Attraktives Gehalt: 85.000 - 120.000 EUR
-• Remote-First Kultur mit optionalem Büro in Berlin-Mitte
-• 30 Tage Urlaub + Bildungsbudget
-• Modernste Hardware und Software-Tools
-• Regelmäßige Team-Events und Konferenzbesuche''',
-            'keywords': ['AI', 'LLM', 'GPT', 'Machine Learning'],
-        },
-        {
-            'titel': 'Machine Learning Engineer - Computer Vision',
-            'firmenname': 'Automotive AI Solutions',
-            'standort': 'München',
-            'textvorschau': '''Entwicklung von Computer Vision Lösungen für autonomes Fahren bei einem führenden Automotive-Zulieferer.
-
-Ihre Aufgaben:
-• Entwicklung von Objekterkennungs- und Tracking-Algorithmen
-• Training und Optimierung von Deep Learning Modellen für Echtzeit-Anwendungen
-• Integration von Computer Vision in eingebettete Systeme
-• Zusammenarbeit mit Hardware-Teams für optimale Performance
-• Evaluation und Benchmarking von ML-Modellen
-
-Ihr Profil:
-• Master/PhD in Informatik, Mathematik oder verwandtem Bereich
-• 3+ Jahre Erfahrung in Computer Vision und Deep Learning
-• Expertise in PyTorch/TensorFlow und OpenCV
-• Erfahrung mit YOLO, Faster R-CNN oder ähnlichen Architekturen
-• Kenntnisse in C++ und eingebetteten Systemen von Vorteil
-
-Wir bieten:
-• Gehalt: 75.000 - 100.000 EUR
-• Flexible Arbeitszeiten, 2 Tage Home Office
-• Betriebliche Altersvorsorge
-• Firmenwagen oder Mobilitätsbudget
-• Weiterbildungsmöglichkeiten und Konferenzbesuche''',
-            'keywords': ['Machine Learning', 'Computer Vision', 'Deep Learning', 'AI'],
-        },
-        {
-            'titel': 'Data Scientist - Generative AI (m/w/d)',
-            'firmenname': 'FinTech Innovation Lab',
-            'standort': 'Frankfurt am Main',
-            'textvorschau': '''Implementierung von GenAI-Lösungen im Finanzsektor bei einem innovativen FinTech-Unternehmen.
-
-Ihre Aufgaben:
-• Entwicklung von GenAI-Anwendungen für Finanzanalyse und Risikobewertung
-• Analyse großer Datenmengen und Entwicklung prädiktiver Modelle
-• Integration von LLMs für automatisierte Berichtserstellung
-• Zusammenarbeit mit Compliance-Teams für regulatorische Anforderungen
-• Präsentation von Ergebnissen an Stakeholder und Management
-
-Ihr Profil:
-• Master in Data Science, Statistik oder Informatik
-• 4+ Jahre Erfahrung als Data Scientist
-• Kenntnisse in GenAI/LLM-Technologien
-• Erfahrung im Finanzsektor von Vorteil
-• SQL, Python, und Visualisierungstools (Tableau, PowerBI)
-
-Wir bieten:
-• Gehalt: 80.000 - 110.000 EUR + Bonus
-• Zentrale Lage in Frankfurt
-• Flexible Arbeitszeiten
-• Betriebliche Krankenversicherung
-• Startup-Kultur mit flachen Hierarchien''',
-            'keywords': ['GenAI', 'Data Science', 'AI', 'Machine Learning'],
-        },
-        {
-            'titel': 'KI-Projektmanager - Digital Transformation',
-            'firmenname': 'Consulting Partners AG',
-            'standort': 'Hamburg',
-            'textvorschau': '''Leitung von KI-Transformationsprojekten bei Großkunden als Senior Consultant.
-
-Ihre Aufgaben:
-• Leitung von KI-Einführungsprojekten bei DAX-Unternehmen
-• Entwicklung von KI-Strategien und Roadmaps
-• Beratung zu Copilot, ChatGPT Enterprise und anderen AI-Tools
-• Stakeholder-Management und Change Management
-• Aufbau und Führung von Projektteams
-
-Ihr Profil:
-• 5+ Jahre Erfahrung in IT-Beratung oder Projektmanagement
-• Verständnis von KI/ML-Technologien und deren Anwendung
-• Erfahrung mit Microsoft 365 Copilot, ChatGPT Enterprise
-• Zertifizierungen (PMP, PRINCE2) von Vorteil
-• Exzellente Kommunikations- und Präsentationsfähigkeiten
-
-Wir bieten:
-• Gehalt: 90.000 - 130.000 EUR
-• Firmenwagen oder BahnCard 100
-• Home Office und flexible Arbeitszeiten
-• Umfangreiche Weiterbildungsprogramme
-• Internationales Arbeitsumfeld''',
-            'keywords': ['KI', 'Copilot', 'ChatGPT', 'AI'],
-        },
-        {
-            'titel': 'Prompt Engineer - Enterprise AI',
-            'firmenname': 'Digital Solutions GmbH',
-            'standort': 'Köln',
-            'textvorschau': '''Optimierung von LLM-Prompts für Unternehmensanwendungen in einer spezialisierten AI-Agentur.
-
-Ihre Aufgaben:
-• Entwicklung und Optimierung von Prompts für verschiedene LLMs
-• Erstellung von Prompt-Bibliotheken und Best Practices
-• A/B-Testing und Performance-Analyse von Prompts
-• Schulung von Kunden und internen Teams
-• Dokumentation und Qualitätssicherung
-
-Ihr Profil:
-• 2+ Jahre Erfahrung mit LLMs und Prompt Engineering
-• Tiefes Verständnis von GPT-4, Claude, Gemini und anderen Modellen
-• Kenntnisse in Python für Automatisierung
-• Kreativität und analytisches Denken
-• Sehr gute Deutsch- und Englischkenntnisse
-
-Wir bieten:
-• Gehalt: 60.000 - 85.000 EUR
-• 100% Remote möglich
-• Flexible Arbeitszeiten
-• Neueste AI-Tools und Technologien
-• Startup-Atmosphäre mit schnellem Wachstum''',
-            'keywords': ['Prompt Engineer', 'LLM', 'AI', 'GenAI'],
-        },
-        {
-            'titel': 'Head of AI & Innovation',
-            'firmenname': 'Enterprise Tech AG',
-            'standort': 'Düsseldorf',
-            'textvorschau': '''Führung des AI-Teams und strategische Ausrichtung der KI-Initiativen als Teil der Geschäftsleitung.
-
-Ihre Aufgaben:
-• Strategische Führung des AI-Teams (15+ Mitarbeiter)
-• Entwicklung der AI-Roadmap und Vision
-• Budget- und Ressourcenplanung
-• Zusammenarbeit mit C-Level und Stakeholdern
-• Aufbau von Partnerschaften mit Technologieanbietern
-
-Ihr Profil:
-• 10+ Jahre Erfahrung in AI/ML
-• 5+ Jahre Führungserfahrung
-• Nachweisliche Erfolge bei AI-Transformationen
-• MBA oder vergleichbare Qualifikation von Vorteil
-• Starke strategische und kommunikative Fähigkeiten
-
-Wir bieten:
-• Gehalt: 150.000 - 200.000 EUR + Bonus
-• Geschäftswagen
-• Aktienoptionen
-• Executive Coaching
-• Internationale Reisetätigkeit''',
-            'keywords': ['AI', 'KI', 'Machine Learning', 'Leadership'],
-        },
-        {
-            'titel': 'NLP Engineer - Conversational AI',
-            'firmenname': 'ChatBot Innovations',
-            'standort': 'Berlin',
-            'textvorschau': '''Entwicklung von Chatbots und virtuellen Assistenten für Enterprise-Kunden.
-
-Ihre Aufgaben:
-• Entwicklung von NLU/NLG-Komponenten
-• Training und Optimierung von Conversational AI Modellen
-• Integration mit Backend-Systemen (CRM, ERP)
-• Performance-Monitoring und kontinuierliche Verbesserung
-• Technische Dokumentation
-
-Ihr Profil:
-• 3+ Jahre Erfahrung in NLP/Conversational AI
-• Kenntnisse in Rasa, Dialogflow oder ähnlichen Frameworks
-• Python, FastAPI, Docker
-• Erfahrung mit LLM-Integration
-• Teamfähigkeit und selbstständige Arbeitsweise
-
-Wir bieten:
-• Gehalt: 65.000 - 90.000 EUR
-• Zentrale Lage in Berlin-Kreuzberg
-• Flexible Arbeitszeiten, Home Office möglich
-• Regelmäßige Hackathons
-• Weiterbildungsbudget''',
-            'keywords': ['NLP', 'AI', 'Conversational AI', 'LLM'],
-        },
-        {
-            'titel': 'AI Solutions Architect (m/w/d)',
-            'firmenname': 'Cloud Systems GmbH',
-            'standort': 'Stuttgart',
-            'textvorschau': '''Design und Implementierung skalierbarer AI-Lösungen in der Cloud.
-
-Ihre Aufgaben:
-• Architektur-Design für AI/ML-Systeme
-• Beratung von Kunden bei der Cloud-Migration
-• Implementierung von MLOps-Pipelines
-• Performance-Optimierung und Kostenkontrolle
-• Technische Führung von Projektteams
-
-Ihr Profil:
-• 7+ Jahre Erfahrung in Software-Architektur
-• Expertise in AWS, Azure oder GCP
-• Kenntnisse in Kubernetes, Terraform, CI/CD
-• Erfahrung mit ML-Frameworks und MLOps
-• AWS/Azure/GCP Zertifizierungen von Vorteil
-
-Wir bieten:
-• Gehalt: 95.000 - 130.000 EUR
-• Remote-First mit optionalem Büro
-• Zertifizierungsbudget
-• Moderne Arbeitsausstattung
-• Team-Events und Workations''',
-            'keywords': ['AI', 'Cloud', 'Machine Learning', 'Architecture'],
-        },
-        {
-            'titel': 'Deep Learning Researcher',
-            'firmenname': 'Research Institute AI',
-            'standort': 'München',
-            'textvorschau': '''Forschung im Bereich Deep Learning und neuronale Netze an einem führenden Forschungsinstitut.
-
-Ihre Aufgaben:
-• Grundlagenforschung in Deep Learning
-• Entwicklung neuer Algorithmen und Architekturen
-• Publikation in Top-Konferenzen (NeurIPS, ICML, ICLR)
-• Betreuung von PhD-Studenten
-• Zusammenarbeit mit Industriepartnern
-
-Ihr Profil:
-• PhD in Machine Learning, Informatik oder Mathematik
-• Publikationstrack Record in Top-Venues
-• Expertise in PyTorch/JAX
-• Erfahrung mit GPU-Cluster und verteiltem Training
-• Leidenschaft für Forschung
-
-Wir bieten:
-• Gehalt: 70.000 - 100.000 EUR
-• Akademisches Umfeld mit Industrieanbindung
-• Zugang zu modernster GPU-Infrastruktur
-• Konferenzreisen weltweit
-• Flexible Arbeitszeiten''',
-            'keywords': ['Deep Learning', 'AI', 'Neural Network', 'Research'],
-        },
-        {
-            'titel': 'MLOps Engineer - AI Platform',
-            'firmenname': 'DataDriven Tech',
-            'standort': 'Leipzig',
-            'textvorschau': '''Aufbau und Betrieb der ML-Infrastruktur für skalierbare AI-Produkte.
-
-Ihre Aufgaben:
-• Aufbau und Wartung der ML-Plattform
-• Implementierung von CI/CD für ML-Modelle
-• Monitoring und Alerting für ML-Systeme
-• Optimierung von Training- und Inference-Pipelines
-• Zusammenarbeit mit Data Scientists
-
-Ihr Profil:
-• 4+ Jahre Erfahrung in DevOps/MLOps
-• Kubernetes, Docker, Helm
-• MLflow, Kubeflow oder ähnliche Tools
-• Python, Bash, Terraform
-• Cloud-Erfahrung (AWS/GCP/Azure)
-
-Wir bieten:
-• Gehalt: 70.000 - 95.000 EUR
-• Remote-First Kultur
-• 30 Tage Urlaub
-• Weiterbildungsbudget
-• Stock Options''',
-            'keywords': ['MLOps', 'Machine Learning', 'AI', 'DevOps'],
-        },
-    ]
-
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update(self.HEADERS)
@@ -376,18 +91,14 @@ Wir bieten:
     def search_jobs(self, keywords=None, location=None, radius=30, max_pages=3, date_filter=None, job_title_filter=None):
         """
         Search for jobs on StepStone.
-        Falls back to demo data if scraping fails.
+        Returns empty list if scraping fails - no demo data fallback.
         """
-        # Try real scraping first
         try:
             all_jobs = self._scrape_jobs(keywords, location, radius, max_pages, date_filter, job_title_filter)
-            if all_jobs:
-                return all_jobs
+            return all_jobs if all_jobs else []
         except Exception as e:
-            print(f"Scraping failed, using demo data: {e}")
-
-        # Fallback to demo data
-        return self._get_demo_jobs(keywords, location, job_title_filter)
+            print(f"Scraping failed: {e}")
+            return []
 
     def _scrape_jobs(self, keywords, location, radius, max_pages, date_filter, job_title_filter):
         """Attempt to scrape real jobs from StepStone."""
@@ -428,57 +139,6 @@ Wir bieten:
                 unique_jobs.append(job)
 
         return unique_jobs
-
-    def _get_demo_jobs(self, keywords=None, location=None, job_title_filter=None):
-        """Generate demo job data based on search criteria."""
-        jobs = []
-
-        for i, demo in enumerate(self.DEMO_JOBS):
-            job = demo.copy()
-            job['quelle'] = 'StepStone'
-            job['quelle_url'] = f'https://www.stepstone.de/stellenangebote--Demo-{i+1}-{job["standort"]}'
-
-            # Filter by location if specified
-            if location:
-                location_lower = location.lower()
-                if location_lower not in job['standort'].lower():
-                    # 30% chance to include anyway for variety
-                    if random.random() > 0.3:
-                        continue
-                    job['standort'] = location.title()
-
-            # Filter by keywords if specified
-            if keywords:
-                keywords_lower = keywords.lower()
-                title_lower = job['titel'].lower()
-                preview_lower = job['textvorschau'].lower()
-
-                # Check if any keyword matches
-                keyword_list = keywords_lower.replace(',', ' ').split()
-                matches = any(kw in title_lower or kw in preview_lower for kw in keyword_list)
-
-                if not matches:
-                    continue
-
-            # Filter by job title if specified
-            if job_title_filter:
-                if job_title_filter.lower() not in job['titel'].lower():
-                    continue
-
-            jobs.append(job)
-
-        # If no matches, return all demo jobs
-        if not jobs:
-            jobs = []
-            for i, demo in enumerate(self.DEMO_JOBS):
-                job = demo.copy()
-                job['quelle'] = 'StepStone'
-                job['quelle_url'] = f'https://www.stepstone.de/stellenangebote--Demo-{i+1}-{demo["standort"]}'
-                if location:
-                    job['standort'] = location.title()
-                jobs.append(job)
-
-        return jobs
 
     def _parse_search_results(self, html):
         """Parse job listings from search results HTML."""

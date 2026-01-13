@@ -140,20 +140,14 @@ def research_lead(lead_id):
             location=lead.standort
         )
 
-        # Update lead with researched data (only if we found something)
-        if research_result.get('firmen_website'):
-            lead.firmen_website = research_result['firmen_website']
-        if research_result.get('firmen_adresse'):
-            lead.firmen_adresse = research_result['firmen_adresse']
-        if research_result.get('firmen_email'):
-            lead.firmen_email = research_result['firmen_email']
-        if research_result.get('ansprechpartner_name'):
-            lead.ansprechpartner_name = research_result['ansprechpartner_name']
-        if research_result.get('ansprechpartner_rolle'):
-            lead.ansprechpartner_rolle = research_result['ansprechpartner_rolle']
-        if research_result.get('ansprechpartner_linkedin'):
-            lead.ansprechpartner_linkedin = research_result['ansprechpartner_linkedin']
-            lead.ansprechpartner_quelle = 'LinkedIn (via Perplexity)'
+        # Update lead with researched data - use 'n/a' if not found
+        lead.firmen_website = research_result.get('firmen_website') or 'n/a'
+        lead.firmen_adresse = research_result.get('firmen_adresse') or 'n/a'
+        lead.firmen_email = research_result.get('firmen_email') or 'n/a'
+        lead.ansprechpartner_name = research_result.get('ansprechpartner_name') or 'n/a'
+        lead.ansprechpartner_rolle = research_result.get('ansprechpartner_rolle') or 'n/a'
+        lead.ansprechpartner_linkedin = research_result.get('ansprechpartner_linkedin') or 'n/a'
+        lead.ansprechpartner_quelle = 'Perplexity AI' if research_result.get('ansprechpartner_name') else 'n/a'
 
         # Update status to recherchiert
         lead.status = LeadStatus.RECHERCHIERT.value
